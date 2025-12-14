@@ -59,11 +59,11 @@ async def analyze_pdf_report(file: UploadFile = File(...)):
     try:
         # 1. OCR Extraction
         lines = extract_text_with_layout(temp_filename)
-        extracted_data = parse_lab_report(lines)
+        raw_extracted_data = parse_lab_report(lines)
         
 
         #if OCR fails to read data,(STOP)
-        if not extracted_data:
+        if not raw_extracted_data:
             if os.path.exists(temp_filename): os.remove(temp_filename)
             return {
                 "status": "Failed",
@@ -72,20 +72,21 @@ async def analyze_pdf_report(file: UploadFile = File(...)):
             }
 
         #pipeline
-        critical_alerts = safety_guard.check_criticals(extracted_data)
-        health_analysis = engine.analyze_full_report(extracted_data)
+        clean_data = safety_guard.sanitize_data(raw_extracted_data)
+        critical_alerts = safety_guard.check_criticals(clean_data)
+        health_analysis = engine.analyze_full_report(clean_data)
         
         #report generation
         #pass 'critical_alerts' so the AI knows to panic
         patient_text = report_gen.generate_patient_summary(
             health_analysis, 
-            raw_data=extracted_data, 
+            raw_data=clean_data, 
             critical_alerts=critical_alerts
         )
         
         doctor_text = report_gen.generate_doctor_summary(
             health_analysis, 
-            raw_data=extracted_data, 
+            raw_data=clean_data, 
             critical_alerts=critical_alerts
         )
         
@@ -97,7 +98,7 @@ async def analyze_pdf_report(file: UploadFile = File(...)):
         return {
             "source": "ocr_extraction",
             "tier": "Free User",
-            "raw_data": extracted_data,
+            "raw_data": clean_data,
             "critical_alerts": critical_alerts,
             "health_analysis": health_analysis,
             "summary_for_patient": patient_text,
