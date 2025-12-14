@@ -1,6 +1,16 @@
 class SafetyGuard:
     def __init__(self):
-        # Define CRITICAL LIMITS (Panic Values based on Emergency Medicine Standards)
+        #OCR CORRECTION THRESHOLDS 
+        #if value > threshold,we assume OCR missed a decimal point and divide by 10.
+        self.fix_thresholds = {
+            'Potassium': 15.0,      # e.g., 44 -> 4.4
+            'Creatinine': 15.0,     # e.g., 12 -> 1.2
+            'Bilirubin_Total': 20.0, # e.g., 15 -> 1.5
+            'Hemoglobin': 40.0,     # e.g., 145 -> 14.5
+            'TSH': 100.0            # e.g., 250 -> 2.50
+        }
+
+        #CRITICAL LIMITS (Panic Values)
         self.critical_limits = {
             'Hemoglobin': {'min': 6.0, 'max': 20.0, 'msg': "CRITICAL: Hemoglobin dangerously abnormal. Risk of heart failure or clotting."},
             'Glucose': {'min': 40.0, 'max': 500.0, 'msg': "CRITICAL: Glucose crisis."},            
@@ -11,6 +21,24 @@ class SafetyGuard:
             'Platelets': {'min': 20000, 'msg': "CRITICAL: Platelets critically low. High risk of internal bleeding."},
             'WBC': {'min': 500, 'max': 50000, 'msg': "CRITICAL: White Blood Cell count indicates severe sepsis or leukemia risk."}
         }
+
+    def sanitize_data(self, data):
+        """
+        Fixes common OCR decimal errors (e.g. 44 -> 4.4)
+        Returns a NEW dictionary with corrected values.
+        """
+        cleaned_data = data.copy()
+        for key, val in cleaned_data.items():
+            if key in self.fix_thresholds:
+                threshold = self.fix_thresholds[key]
+                #if value is insanely high, try dividing by 10
+                if val > threshold:
+                    fixed_val = val / 10.0
+                    #only accept fix if the new value is plausible (less than threshold)
+                    if fixed_val < threshold:
+                        print(f"SafetyGuard: Auto-Corrected OCR error for {key}: {val} -> {fixed_val}")
+                        cleaned_data[key] = fixed_val
+        return cleaned_data
 
     def check_criticals(self, data):
         """
@@ -47,5 +75,10 @@ class SafetyGuard:
 
 if __name__ == "__main__":
     guard = SafetyGuard()
-    test_data = {"Glucose": 600, "Hemoglobin": 4.5, "Potassium": 4.0}
-    print(guard.check_criticals(test_data))
+    #test case: OCR error (Potassium 44) + emergency (Glucose 600)
+    raw_ocr = {"Glucose": 600, "Hemoglobin": 4.5, "Potassium": 44.0}
+    
+    print("Raw:", raw_ocr)
+    clean_data = guard.sanitize_data(raw_ocr)
+    print("Sanitized:", clean_data)
+    print("Alerts:", guard.check_criticals(clean_data))
