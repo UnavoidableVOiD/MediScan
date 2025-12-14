@@ -1,0 +1,27 @@
+MEDI-SCAN MEDICAL GUIDELINES V1
+
+1. DIABETES MANAGEMENT
+- Definition: A chronic condition that affects how the body turns food into energy.
+- High Risk Indicators: Fasting Glucose > 126 mg/dL or HbA1c > 6.5%.
+- Lifestyle Advice: Reduce refined sugars (soda, candy). Increase fiber intake (vegetables, whole grains). Exercise at least 30 minutes a day.
+- Warning Signs: Frequent urination, excessive thirst, blurred vision.
+
+2. KIDNEY HEALTH (CKD)
+- Definition: Chronic Kidney Disease means kidneys are damaged and can't filter blood properly.
+- High Risk Indicators: Creatinine > 1.2 mg/dL (Women) or > 1.4 mg/dL (Men). eGFR < 60.
+- Lifestyle Advice: Hydration is key, but don't overhydrate if you have late-stage CKD. Limit sodium (salt) to control blood pressure. Avoid NSAIDs (painkillers like Ibuprofen).
+
+3. LIVER FUNCTION
+- Definition: The liver processes blood and breaks down, balances, and creates the nutrients.
+- High Risk Indicators: Elevated ALT/AST enzymes, high Bilirubin (Jaundice).
+- Lifestyle Advice: Strictly avoid alcohol. Lose weight if overweight to prevent Fatty Liver. Avoid processed foods high in trans fats.
+
+4. THYROID DISORDERS
+- Hypothyroidism (Underactive): High TSH, Low T4. Symptoms: Fatigue, weight gain, cold sensitivity.
+- Hyperthyroidism (Overactive): Low TSH, High T4. Symptoms: Anxiety, weight loss, rapid heartbeat.
+- Advice: Thyroid medication must be taken on an empty stomach. Iodine intake should be regulated.
+
+5. ANEMIA
+- Definition: Lack of healthy red blood cells to carry oxygen.
+- Indicators: Hemoglobin < 13.0 (Men) or < 12.0 (Women).
+- Advice: Eat iron-rich foods (spinach, red meat, lentils). Vitamin C helps iron absorption.

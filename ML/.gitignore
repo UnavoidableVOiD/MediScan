@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+venv/
+.env
+
+datasets/*.csv
+datasets/test_reports/*.pdf
+
+.vscode/
+.idea/
