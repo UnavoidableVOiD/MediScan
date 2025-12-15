@@ -32,7 +32,7 @@ class MedicalChatbot:
             try:
                 self.llm = ChatGroq(
                     temperature=0.2,
-                    model_name="llama3-8b-8192", 
+                    model_name="llama-3.1-8b-instant",
                     api_key=groq_api_key
                 )
                 print("✓ Connected to Groq Cloud.")
