@@ -11,3 +11,7 @@ ML/temp_*.pdf
 
 .vscode/
 .idea/
+
+#frontend dependencies
+frontend/node_modules/
+node_modules/
