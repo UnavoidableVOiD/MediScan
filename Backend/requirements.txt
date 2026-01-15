@@ -1,0 +1,9 @@
+Django>=4.2,<5.0
+djangorestframework
+djangorestframework-simplejwt
+django-phonenumber-field[phonenumbers]
+psycopg[binary]==3.2.3
+
+redis
+django-redis
+python-dotenv
