@@ -32,14 +32,13 @@ class RegisterSerializer(serializers.ModelSerializer):
         if data['password'] != data['confirm_password']:
             raise serializers.ValidationError("Passwords do not match.")
         
-        # Check uniqueness manually to fail fast before OTP if possible, 
-        # though DB constraints exist, checking here gives better error messages without DB integrity error.
+       
         if User.objects.filter(email=data['email']).exists():
              raise serializers.ValidationError({"email": "Email already exists."})
         if User.objects.filter(phone_number=data['phone_number']).exists():
              raise serializers.ValidationError({"phone_number": "Phone number already exists."})
 
-        # Password complexity check (simple version, more logic can be added or rely on potential validators)
+       
         password = data['password']
         if not any(char.isdigit() for char in password):
             raise serializers.ValidationError("Password must contain at least one digit.")
@@ -53,9 +52,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        # We DO NOT create the user here. We return the data to the view to handle OTP sending.
-        # However, to be compliant with save(), we might need to override it or just use this for validation.
-        # We will strip confirm_password and cache the registration data temporarily until OTP is verified.
+       
         validated_data.pop('confirm_password')
         return validated_data
 
@@ -69,11 +66,7 @@ class VerifyOTPSerializer(serializers.Serializer):
         identifier = data['email']
         otp = data['otp']
         
-        # Verify OTP
-        # Note: logic for 'register' vs 'login' might differ in WHAT we verify against.
-        # For registration, the user might not exist yet, so we verify against the temp cache key.
-        # For login, user exists.
-        
+
         is_valid, message = OTPHandler.verify_otp(identifier, otp)
         if not is_valid:
             raise serializers.ValidationError(message)
@@ -106,15 +99,14 @@ class LoginSerializer(serializers.Serializer):
             user.failed_login_attempts += 1
             if user.failed_login_attempts >= 5:
                 user.account_locked_until = now() + timedelta(minutes=15)
-                user.failed_login_attempts = 0 # Reset or keep? Usually reset after lock or keep accumulating?
-                # Requirement says "Lock account after 5 failures for 15 minutes".
-                # It implies creating a lock.
+                user.failed_login_attempts = 0
+                
                 user.save()
                 raise serializers.ValidationError("Account locked due to too many failed attempts.")
             user.save()
             raise serializers.ValidationError("Invalid credentials.")
 
-        # Success reset failure count
+      
         if user.failed_login_attempts > 0:
             user.failed_login_attempts = 0
             user.save()
@@ -134,3 +126,7 @@ class LogoutSerializer(serializers.Serializer):
             RefreshToken(self.token).blacklist()
         except Exception:
             self.fail('bad_token')
+
+
+class GoogleLoginSerializer(serializers.Serializer):
+    token = serializers.CharField(help_text="Google ID Token received from the frontend.")

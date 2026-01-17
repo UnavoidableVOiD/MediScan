@@ -20,7 +20,7 @@ class EmailBackend(DjangoEmailBackend):
         occurred.
         """
         if self.connection:
-            # Nothing to do if the connection is already open.
+           
             return False
 
         connection_params = {'timeout': self.timeout} if self.timeout else {}
@@ -29,10 +29,9 @@ class EmailBackend(DjangoEmailBackend):
                 self.host, self.port, **connection_params
             )
 
-            # TLS/SSL are mutually exclusive, so only attempt TLS over
-            # non-secure connections.
+           
             if not self.use_ssl and self.use_tls:
-                # Create an unverified SSL context to bypass certificate verification
+              
                 context = ssl._create_unverified_context()
                 self.connection.starttls(context=context)
             

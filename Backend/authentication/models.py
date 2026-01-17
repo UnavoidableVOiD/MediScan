@@ -40,7 +40,7 @@ class CustomUser(AbstractUser):
     
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
-    phone_number = PhoneNumberField(unique=True)
+    phone_number = PhoneNumberField(unique=True, null=True, blank=True)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='DOCTOR')
     
     is_verified = models.BooleanField(default=False)
