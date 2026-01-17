@@ -5,8 +5,13 @@ from django.core.cache import cache
 from rest_framework_simplejwt.tokens import RefreshToken
 import logging
 
-from .serializers import RegisterSerializer, VerifyOTPSerializer, LoginSerializer, LogoutSerializer
+from .serializers import RegisterSerializer, VerifyOTPSerializer, LoginSerializer, LogoutSerializer, GoogleLoginSerializer
 from .otp import OTPHandler
+import os
+from django.conf import settings
+from google.oauth2 import id_token
+from google.auth.transport import requests
+from drf_spectacular.utils import extend_schema
 
 User = get_user_model()
 logger = logging.getLogger('security')
@@ -14,15 +19,15 @@ logger = logging.getLogger('security')
 class RegisterView(views.APIView):
     permission_classes = [permissions.AllowAny]
     serializer_class = RegisterSerializer
-    throttle_scope = 'anon' # Apply rate limiting settings if needed
+    throttle_scope = 'anon'
 
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             email = serializer.validated_data['email']
             
-            # Send OTP
-            success, msg = OTPHandler.send_otp(email, email) # identifier is email
+          
+            success, msg = OTPHandler.send_otp(email, email)
             if success:
                 reg_data = serializer.validated_data
                 cache.set(f"register_data:{email}", reg_data, timeout=300) 
@@ -74,10 +79,9 @@ class VerifyOTPView(views.APIView):
             elif flow_type == 'login':
                 try:
                     user = User.objects.get(email=email)
-                    user.is_verified = True # Ensure verified if not already
+                    user.is_verified = True 
                     user.save()
 
-                    # Issue Tokens
                     refresh = RefreshToken.for_user(user)
                     
                     return Response({
@@ -85,6 +89,12 @@ class VerifyOTPView(views.APIView):
                         "message": "Login completed.",
                         "refresh": str(refresh),
                         "access": str(refresh.access_token),
+                        "user": {
+                            "email": user.email,
+                            "first_name": user.first_name,
+                            "last_name": user.last_name,
+                            "role": user.role
+                        }
                     }, status=status.HTTP_200_OK)
                 except User.DoesNotExist:
                      return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
@@ -120,3 +130,91 @@ class LogoutView(views.APIView):
             serializer.save()
             return Response({"success": True, "message": "Logged out."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class GoogleLoginView(views.APIView):
+    permission_classes = [permissions.AllowAny]
+    serializer_class = GoogleLoginSerializer
+
+    @extend_schema(request=GoogleLoginSerializer)
+    def post(self, request):
+        serializer = GoogleLoginSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        token = serializer.validated_data.get('token')
+
+        try:
+            idinfo = id_token.verify_oauth2_token(token, requests.Request(), settings.GOOGLE_CLIENT_ID)
+            email = idinfo['email']
+            first_name = idinfo.get('given_name', '')
+            last_name = idinfo.get('family_name', '')
+
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={
+                    'first_name': first_name,
+                    'last_name': last_name,
+                    'role': 'PATIENT',
+                    'is_verified': True
+                }
+            )
+
+            if not created:
+                user.is_verified = True
+                user.save()
+
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                "success": True,
+                "message": "Login completed." if not created else "Registration and Login completed.",
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+                "user": {
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "role": user.role
+                }
+            }, status=status.HTTP_200_OK)
+
+        except ValueError as e:
+            logger.error(f"Google Token Validation failed: {str(e)}")
+            return Response({"error": f"Invalid token: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+             logger.error(f"Google Login failed: {str(e)}")
+             return Response({"error": "Google Login failed"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class ProfileView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        return Response({
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "email": user.email,
+            "phone_number": user.phone_number,
+            "role": user.role
+        })
+
+    def patch(self, request):
+        user = request.user
+        data = request.data
+        
+        user.first_name = data.get('first_name', user.first_name)
+        user.last_name = data.get('last_name', user.last_name)
+        user.phone_number = data.get('phone_number', user.phone_number)
+        
+        user.save()
+        
+        return Response({
+            "message": "Profile updated successfully.",
+            "user": {
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "email": user.email,
+                "phone_number": user.phone_number,
+                "role": user.role
+            }
+        })
