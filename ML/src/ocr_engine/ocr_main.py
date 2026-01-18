@@ -43,7 +43,7 @@ def parse_lab_report(lines):
         
         # KIDNEY
         'Blood_Urea': ['Serum Urea', 'Blood Urea', 'Urea'],
-        'Creatinine': ['Serum Creatinine', 'Creatinine'],
+        'Creatinine': ['Serum Creatinine', 'Creatinine', 'sc'],
         'Sodium': ['Sodium', 'Na+'],
         'Potassium': ['Potassium', 'K+'],
         
@@ -126,12 +126,12 @@ def parse_lab_report(lines):
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.abspath(__file__))
     # Update file name if needed
-    test_file = os.path.join(script_dir, "../../datasets/test_reports/Report2.pdf")
+    test_file = os.path.join(script_dir, "../../datasets/test_reports/Report1.pdf")
     
     if os.path.exists(test_file):
-        print(f"--- SCANNING V3: {test_file} ---")
+        print(f"SCANNING V3: {test_file}")
         lines = extract_text_with_layout(test_file)
         extracted_data = parse_lab_report(lines)
         
-        print("\n--- EXTRACTED JSON ---")
+        print("\nEXTRACTED JSON")
         print(json.dumps(extracted_data, indent=4))

@@ -11,3 +11,10 @@ ML/temp_*.pdf
 
 .vscode/
 .idea/
+
+
+/ML/final_benchmark_data.csv
+/ML/benchmark_study.py
+/ML/check_tree.py
+
+/ML/benchmark_results.csv

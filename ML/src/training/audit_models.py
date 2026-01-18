@@ -1,133 +1,140 @@
 import pandas as pd
 import numpy as np
-import joblib
 import os
-import warnings
-from sklearn.metrics import recall_score, precision_score
+import joblib
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.manifold import TSNE
+from sklearn.metrics import classification_report, recall_score, f1_score
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
 
-warnings.filterwarnings("ignore")
-
+# CONFIG
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODELS_DIR = os.path.join(BASE_DIR, '../../models')
-DATA_DIR = os.path.join(BASE_DIR, '../../datasets')
+MODELS_DIR = os.path.join(BASE_DIR, "../../models")
+DATA_DIR = os.path.join(BASE_DIR, "../../datasets")
+REPORT_DIR = os.path.join(BASE_DIR, "../../reports/figures")
+os.makedirs(REPORT_DIR, exist_ok=True)
 
-def load_artifacts(disease):
+def audit_model(disease_name, csv_file, target_col, threshold=0.5):
+    print(f"\n==================================================")
+    print(f"📊 FINAL AUDIT: {disease_name.upper()}")
+    print(f"==================================================")
+
+    # 1. LOAD DATA
     try:
-        model = joblib.load(os.path.join(MODELS_DIR, f'{disease}_best_model.pkl'))
-        scaler = joblib.load(os.path.join(MODELS_DIR, f'{disease}_scaler.pkl'))
-        
-        col_file = f'{disease}_model_columns.pkl' if disease == 'heart' else f'{disease}_columns.pkl'
-        cols = joblib.load(os.path.join(MODELS_DIR, col_file))
-        
-        try:
-            imputer = joblib.load(os.path.join(MODELS_DIR, f'{disease}_imputer.pkl'))
-        except:
-            imputer = None
-            
-        return model, scaler, imputer, cols
-    except Exception as e:
-        print(f"Could not load artifacts for {disease}: {e}")
-        return None, None, None, None
-
-def audit_disease(disease, csv_name, target_col):
-    print(f"\n{'='*50}")
-    print(f"AUDITING: {disease.upper()}")
-    print(f"{'='*50}")
-
-    try:
-        df = pd.read_csv(os.path.join(DATA_DIR, csv_name))
-    except:
-        print(f"CSV not found: {csv_name}")
+        df = pd.read_csv(os.path.join(DATA_DIR, csv_file))
+    except FileNotFoundError:
+        print(f"❌ Data file not found: {csv_file}")
         return
 
-    X = df.drop(columns=[target_col], errors='ignore')
-    y_raw = df[target_col]
+    # --- CUSTOM PREPROCESSING LOGIC ---
+    if disease_name == "diabetes":
+        zero_cols = ['Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI']
+        for col in zero_cols: df[col] = df[col].replace(0, np.nan)
+        
+    elif disease_name == "liver":
+        if df['Gender'].dtype == 'object':
+            df['Gender'] = df['Gender'].map({'Male': 1, 'Female': 0})
+        if df['Dataset'].max() == 2:
+            df['Dataset'] = df['Dataset'].map({1: 1, 2: 0})
 
-    if disease == 'heart':
-        if 'Sex' in X.columns: X['Sex'] = X['Sex'].map({'M': 1, 'F': 0})
-        if 'ExerciseAngina' in X.columns: X['ExerciseAngina'] = X['ExerciseAngina'].map({'Y': 1, 'N': 0})
-        X = pd.get_dummies(X, columns=['ChestPainType', 'RestingECG', 'ST_Slope'], drop_first=True)
-        y = y_raw
-
-    elif disease == 'thyroid':
-        def map_target(val):
-            val = str(val).lower()
-            if 'hyper' in val or 'a' in val or 'b' in val: return 1
-            if 'hypo' in val or 'e' in val or 'f' in val: return 1 
-            return 0
-        y = y_raw.apply(map_target)
-
-        cols_to_drop = ['patient_id', 'referral_source', 'TBG'] 
-        cols_to_drop += [c for c in df.columns if 'measured' in c]
-        X = X.drop(columns=cols_to_drop, errors='ignore')
-
-        for col in X.select_dtypes(include=['object']).columns:
-            if col == 'sex': X[col] = X[col].map({'M': 1, 'F': 0})
-            else: X[col] = X[col].map({'t': 1, 'f': 0, 'y': 1, 'n': 0})
-
-    elif disease == 'liver':
-        y = y_raw.map({1: 1, 2: 0})
-        if 'Gender' in X.columns:
-            X['Gender'] = X['Gender'].apply(lambda x: 1 if str(x).strip() == 'Male' else 0)
-
-    elif disease == 'anemia':
-        if 'Gender' in X.columns:
-             X['Gender'] = X['Gender'].apply(lambda x: 1 if str(x).lower() in ['m', 'male', '1'] else 0)
-        y = y_raw 
-
-    else: 
-        y = y_raw
-
-    model, scaler, imputer, model_cols = load_artifacts(disease)
-    if not model: return
-
-    X = X.reindex(columns=model_cols, fill_value=0)
-
-    if imputer: X_processed = imputer.transform(X)
-    else: X_processed = X
+    X = df.drop(target_col, axis=1)
+    y = df[target_col]
     
-    if scaler: X_processed = scaler.transform(X_processed)
+    # Drop IDs if present
+    drop_cols = [c for c in ['id', 'ID', 'PatientID'] if c in df.columns]
+    if drop_cols: 
+        X = X.drop(columns=drop_cols)
+
+    # Handle Thyroid string targets
+    if y.dtype == 'object':
+        le = LabelEncoder()
+        y = le.fit_transform(y.astype(str))
+        y = pd.Series(y) # Convert back to Series for value_counts
+
+    # --- CRITICAL FIX: FILTER RARE CLASSES (For Thyroid) ---
+    # We cannot split classes that have < 2 samples.
+    class_counts = y.value_counts()
+    valid_classes = class_counts[class_counts >= 2].index
     
-    print("\nTOP 3 FEATURES (Logic Check):")
-    if hasattr(model, 'feature_importances_'):
-        importances = model.feature_importances_
-        indices = np.argsort(importances)[::-1]
-        for i in range(min(3, len(indices))):
-            print(f"   {i+1}. {model_cols[indices[i]]}: {importances[indices[i]]:.4f}")
-    elif hasattr(model, 'coef_'): 
-        importances = np.abs(model.coef_[0])
-        indices = np.argsort(importances)[::-1]
-        for i in range(min(3, len(indices))):
-            print(f"   {i+1}. {model_cols[indices[i]]}: {importances[indices[i]]:.4f}")
+    if len(valid_classes) < len(class_counts):
+        # Filter both X and y
+        mask = y.isin(valid_classes)
+        X = X[mask]
+        y = y[mask]
+
+    # 2. LOAD SAVED ARTIFACTS
+    try:
+        model = joblib.load(os.path.join(MODELS_DIR, f"{disease_name}_best_model.pkl"))
+        imputer = joblib.load(os.path.join(MODELS_DIR, f"{disease_name}_imputer.pkl"))
+        scaler = joblib.load(os.path.join(MODELS_DIR, f"{disease_name}_scaler.pkl"))
+    except FileNotFoundError:
+        print(f"❌ Model artifacts not found for {disease_name}")
+        return
+
+    # 3. TRANSFORM
+    if disease_name not in ['liver']: 
+        X = pd.get_dummies(X, drop_first=True)
+
+    try:
+        X_imp = imputer.transform(X)
+        X_scaled = scaler.transform(X_imp)
+    except ValueError as e:
+        print(f"⚠️ Feature Mismatch Error: {e}")
+        return
+
+    # 4. GENERATE t-SNE PLOT
+    # print("   -> Generating Final t-SNE Plot...")
+    # try:
+    #     if len(y) > 1500:
+    #         idx = np.random.choice(len(y), 1500, replace=False)
+    #         X_vis = X_scaled[idx]
+    #         y_vis = y.iloc[idx] if hasattr(y, 'iloc') else y[idx]
+    #     else:
+    #         X_vis = X_scaled
+    #         y_vis = y
+            
+    #     perp = min(30, len(y_vis)-1)
+    #     tsne = TSNE(n_components=2, random_state=42, perplexity=perp)
+    #     X_tsne = tsne.fit_transform(X_vis)
+
+    #     plt.figure(figsize=(8, 6))
+    #     sns.scatterplot(x=X_tsne[:,0], y=X_tsne[:,1], hue=y_vis, palette='coolwarm', alpha=0.8)
+    #     plt.title(f"Final t-SNE: {disease_name.title()}")
+    #     plt.savefig(os.path.join(REPORT_DIR, f"{disease_name}_final_tsne.png"))
+    #     plt.close()
+    #     print(f"   -> Plot saved to {disease_name}_final_tsne.png")
+    # except Exception as e:
+    #     print(f"   -> t-SNE Failed: {e}")
+
+    # 5. VALIDATE PERFORMANCE
+    # Split using same seed
+    _, X_test, _, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42, stratify=y)
+    
+    # Prediction Logic
+    if hasattr(model, "predict_proba") and len(np.unique(y)) == 2:
+        probs = model.predict_proba(X_test)[:, 1]
+        preds = (probs >= threshold).astype(int)
     else:
-        print("   (Model does not expose feature importance)")
+        preds = model.predict(X_test)
 
-    print("\nTHRESHOLD ANALYSIS (Recall/Safety):")
-    if hasattr(model, "predict_proba"):
-        probs = model.predict_proba(X_processed)
-        
-        if probs.shape[1] > 2:
-            pos_probs = 1 - probs[:, 0] 
-        else:
-            pos_probs = probs[:, 1]
-
-        print(f"   {'Threshold':<10} | {'Recall':<10} | {'Precision':<10} | {'Action'}")
-        print(f"   {'-'*55}")
-        
-        for t in [0.3, 0.4, 0.5]:
-            y = y.fillna(0)
-            preds = (pos_probs >= t).astype(int)
-            
-            rec = recall_score(y, preds, average='binary', pos_label=1, zero_division=0)
-            prec = precision_score(y, preds, average='binary', pos_label=1, zero_division=0)
-            
-            marker = "✅" if t == 0.3 else ""
-            print(f"   {t:<10} | {rec:.2%}     | {prec:.2%}     | {marker}")
+    print("\n🏆 OFFICIAL METRICS:")
+    print(f"   Threshold Used: {threshold}")
+    
+    avg_type = 'weighted' if len(np.unique(y)) > 2 else 'binary'
+    
+    print(classification_report(y_test, preds))
+    rec = recall_score(y_test, preds, average=avg_type, zero_division=0)
+    f1 = f1_score(y_test, preds, average=avg_type, zero_division=0)
+    
+    print(f"   >> RECALL ({avg_type}): {rec:.2%}")
+    print(f"   >> F1-SCORE ({avg_type}): {f1:.4f}")
 
 if __name__ == "__main__":
-    audit_disease('diabetes', 'diabetes.csv', 'Outcome')
-    audit_disease('heart', 'heart.csv', 'HeartDisease')
-    audit_disease('kidney', 'kidney_cleaned.csv', 'classification') 
-    audit_disease('liver', 'indian_liver_patient.csv', 'Dataset')
-    audit_disease('thyroid', 'thyroid_big.csv', 'target')
-    audit_disease('anemia', 'anemia.csv', 'Result') 
+    audit_model("diabetes", "diabetes.csv", "Outcome", threshold=0.30)
+    audit_model("liver", "indian_liver_patient.csv", "Dataset", threshold=0.50)
+    audit_model("heart", "heart.csv", "HeartDisease")
+    audit_model("kidney", "kidney_cleaned.csv", "classification")
+    audit_model("anemia", "anemia.csv", "Result")
+    audit_model("thyroid", "thyroid_big.csv", "target")

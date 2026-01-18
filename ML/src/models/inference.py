@@ -77,6 +77,16 @@ class DiseasePredictor:
         model = self.artifacts.get('kidney_model')
         if not model: return {"status": "Skipped"}
         try:
+
+            creatinine_val = data.get('Creatinine')
+            if creatinine_val is not None and creatinine_val < 1.4:
+                return {
+                    "prediction": "Healthy", 
+                    "risk_score": 5.0, 
+                    "note": "Normal Creatinine levels detected."
+                }
+
+
             df = pd.DataFrame([data])
             X = self._prepare_input(df, self.artifacts['kidney_cols'], self.artifacts['kidney_imputer'], self.artifacts['kidney_scaler'])
             
