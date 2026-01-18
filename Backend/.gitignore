@@ -1,0 +1,30 @@
+# Security
+.env
+*.key
+*.pem
+
+# Environment
+.venv/
+venv/
+env/
+ENV/
+
+# Databases
+db.sqlite3
+db.sqlite3-journal
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django
+media/
+local_settings.py
+
+# System/IDE
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store

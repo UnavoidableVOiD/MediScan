@@ -12,7 +12,11 @@ ML/temp_*.pdf
 .vscode/
 .idea/
 
+#frontend dependencies
+frontend/node_modules/
+node_modules/
 
+#ml dependencies
 /ML/final_benchmark_data.csv
 /ML/benchmark_study.py
 /ML/check_tree.py
