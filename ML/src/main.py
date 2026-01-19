@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Header, Depends
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
 import uvicorn
@@ -23,8 +23,12 @@ safety_guard = SafetyGuard()
 chatbot = MedicalChatbot()
 print("System Ready.")
 
-class ManualDataRequest(BaseModel):
-    data: Dict[str, Any]
+class AnalysisRequest(BaseModel):
+    """
+    Step 2 Input: The user sends back the (potentially corrected) data.
+    """
+    patient_data: Dict[str, Any]
+    user_id: Optional[str] = "guest"
 
 class ChatRequest(BaseModel):
     question: str
@@ -32,122 +36,97 @@ class ChatRequest(BaseModel):
     #freemium check
     is_premium: bool = False 
 
-#auth helpers
-async def verify_api_key(x_api_key: str = Header(None)):
-    """
-    Simulates checking a B2B Partner's paid API Key.
-    """
-    valid_keys = ["LAB_PARTNER_123", "HOSPITAL_X_456"]
-    if x_api_key not in valid_keys:
-        raise HTTPException(status_code=403, detail="Invalid or Missing B2B API Key")
-    return x_api_key
 
 @app.get("/")
 def home():
-    return {"status": "MediScan AI is Online", "revenue_mode": "Active"}
+    return {"status": "MediScan AI is Online", "mode": "Human-Verification Enabled"}
 
-#free tier(patient upload)
-@app.post("/analyze_report")
-async def analyze_pdf_report(file: UploadFile = File(...)):
+#OCR ONLY 
+@app.post("/extract_from_pdf")
+async def extract_data_step1(file: UploadFile = File(...)):
     """
-    Standard analysis. Free for patients.
+    Step 1: Upload PDF -> Return Raw JSON.
+    The Frontend should display this JSON in a form for the user to edit/verify.
     """
     temp_filename = f"temp_{file.filename}"
     with open(temp_filename, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
         
     try:
-        # 1. OCR Extraction
+        #run vision pipeline
         lines = extract_text_with_layout(temp_filename)
         raw_extracted_data = parse_lab_report(lines)
         
+        #cleanup
+        if os.path.exists(temp_filename): os.remove(temp_filename)
 
-        #if OCR fails to read data,(STOP)
         if not raw_extracted_data:
-            if os.path.exists(temp_filename): os.remove(temp_filename)
             return {
                 "status": "Failed",
-                "error": "OCR could not extract any data. Please ensure the PDF contains readable text (Glucose, Creatinine, etc).",
-                "debug_ocr_preview": lines[:10] if lines else "No text found."
+                "message": "Could not read data. Please enter values manually.",
+                "ocr_debug": lines[:5] if lines else []
             }
+        
+        #sanitization for correctly checking data
+        #eg fix "44" -> "4.4" so the user doesn't have to.
+        auto_corrected_data = safety_guard.sanitize_data(raw_extracted_data)
 
-        #pipeline
-        clean_data = safety_guard.sanitize_data(raw_extracted_data)
-        critical_alerts = safety_guard.check_criticals(clean_data)
-        health_analysis = engine.analyze_full_report(clean_data)
-        
-        #report generation
-        #pass 'critical_alerts' so the AI knows to panic
-        patient_text = report_gen.generate_patient_summary(
-            health_analysis, 
-            raw_data=clean_data, 
-            critical_alerts=critical_alerts
-        )
-        
-        doctor_text = report_gen.generate_doctor_summary(
-            health_analysis, 
-            raw_data=clean_data, 
-            critical_alerts=critical_alerts
-        )
-        
-        if critical_alerts:
-            patient_text = "\n**URGENT:** Critical values detected!\n" + patient_text
-        
-        os.remove(temp_filename)
-        
         return {
-            "source": "ocr_extraction",
-            "tier": "Free User",
-            "raw_data": clean_data,
-            "critical_alerts": critical_alerts,
-            "health_analysis": health_analysis,
-            "summary_for_patient": patient_text,
-            "summary_for_doctor": doctor_text
+            "status": "Success",
+            "message": "Please review these values before analysis.",
+            "extracted_data": auto_corrected_data
         }
+
     except Exception as e:
         if os.path.exists(temp_filename): os.remove(temp_filename)
         raise HTTPException(status_code=500, detail=str(e))
 
-#premium tier(chatbot)
-@app.post("/chat")
-def chat_with_medibot(request: ChatRequest):
-    """
-    [REVENUE GATE] Only allows access if is_premium=True.
-    """
-    if not request.is_premium:
-        return {
-            "error": "Premium Feature Locked",
-            "message": "To chat with MediBot AI, please upgrade to MediScan Premium.",
-            "upgrade_url": "/subscribe"
-        }
 
-    #if Premium, allow access to RAG
-    response = chatbot.ask(request.question, patient_data=request.patient_context)
-    
-    return {
-        "question": request.question, 
-        "answer": response,
-        "tier": "Premium User"
-    }
-
-#b2b tier(paid API for labs)
-@app.post("/b2b/analyze_bulk", dependencies=[Depends(verify_api_key)])
-def b2b_analysis(request: ManualDataRequest):
+@app.post("/analyze_verified_data")
+def analyze_data_step2(request: AnalysisRequest):
     """
-    [REVENUE GATE] Paid endpoint for Diagnostic Labs.
-    Requires 'x-api-key' header.
+    Step 2: User submits Verified Data -> AI runs Diagnosis.
     """
-    data = request.data
+    data = request.patient_data
     
+    #panic values
     critical_alerts = safety_guard.check_criticals(data)
+    
+    #inference
     health_analysis = engine.analyze_full_report(data)
     
+    #llm report generation
+    patient_text = report_gen.generate_patient_summary(
+        health_analysis, 
+        raw_data=data, 
+        critical_alerts=critical_alerts
+    )
+    
+    doctor_text = report_gen.generate_doctor_summary(
+        health_analysis, 
+        raw_data=data, 
+        critical_alerts=critical_alerts
+    )
+    
+    if critical_alerts:
+        patient_text = "URGENT: CRITICAL VALUES DETECTED!\n\n" + patient_text
+
     return {
-        "status": "Success",
-        "billed_to": "Diagnostic Lab Partner",
+        "status": "Analysis Complete",
         "critical_alerts": critical_alerts,
-        "analysis": health_analysis
+        "risk_assessment": health_analysis,
+        "summary_patient": patient_text,
+        "summary_doctor": doctor_text
     }
+
+
+@app.post("/chat")
+def chat_with_medibot(request: ChatRequest):
+    if not request.is_premium:
+        return {"error": "Premium Feature Locked", "message": "Upgrade to chat."}
+
+    response = chatbot.ask(request.question, patient_data=request.patient_context)
+    return {"answer": response}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

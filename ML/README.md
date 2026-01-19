@@ -13,3 +13,36 @@
 
 ## Groq API Key (Get one free at console.groq.com)
 ## GROQ_API_KEY=gsk_your_key_here_xyz...
+
+## API Endpoints
+
+### 1. Step 1: Extraction (OCR)
+*   **URL:** `POST /extract_from_pdf`
+*   **Input:** Multipart Form Data (`file`: PDF)
+*   **Output:** JSON containing raw extracted values.
+    *   *Frontend Task:* Display this JSON in an editable form so the user can fix mistakes (e.g., if OCR reads "Glucose: 900").
+
+### 2. Step 2: Analysis (Brain)
+*   **URL:** `POST /analyze_verified_data`
+*   **Input:** JSON (The corrected data from Step 1)
+    ```json
+    {
+      "patient_data": {
+        "Glucose": 100.0,
+        "Creatinine": 1.1,
+        ...
+      }
+    }
+    ```
+*   **Output:** Risk Predictions + LLM Summaries.
+
+### 3. Chatbot
+*   **URL:** `POST /chat`
+*   **Input:**
+    ```json
+    {
+      "question": "What does high glucose mean?",
+      "is_premium": true,
+      "patient_context": {"Glucose": 140}
+    }
+    ```
