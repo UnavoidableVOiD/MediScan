@@ -43,6 +43,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/auth/', include('authentication.urls')),
     path('api/reports/', include('reports.urls')),
+    path('api/doctor/', include('doctor.urls')),
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('scalar/', scalar_view, name='scalar'),
 ]

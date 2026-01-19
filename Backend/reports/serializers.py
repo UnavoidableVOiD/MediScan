@@ -9,11 +9,12 @@ class ExtractedDataSerializer(serializers.ModelSerializer):
 
 class ReportSerializer(serializers.ModelSerializer):
     extracted_data = ExtractedDataSerializer(read_only=True)
+    doctor_comment = serializers.StringRelatedField(read_only=True)
     
     class Meta:
         model = Report
-        fields = ['id', 'file', 'uploaded_at', 'status', 'extracted_data']
-        read_only_fields = ['id', 'uploaded_at', 'status', 'extracted_data']
+        fields = ['id', 'file', 'uploaded_at', 'status', 'extracted_data', 'doctor_comment']
+        read_only_fields = ['id', 'uploaded_at', 'status', 'extracted_data', 'doctor_comment']
 
     def validate_file(self, value):
         valid_extensions = ['.pdf', '.jpg', '.jpeg', '.png']
