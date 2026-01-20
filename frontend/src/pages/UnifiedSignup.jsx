@@ -46,7 +46,7 @@ export default function UnifiedSignup() {
                     <button
                         onClick={() => handleRoleChange('doctor')}
                         className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${role === 'doctor'
-                            ? 'bg-white text-blue-600 shadow-sm'
+                            ? 'bg-white text-green-600 shadow-sm'
                             : 'text-slate-500 hover:text-slate-700'
                             }`}
                     >
@@ -70,7 +70,7 @@ export default function UnifiedSignup() {
                     {role === 'doctor' && (
                         <div className="animate-fade-in">
                             <div className="mb-4 text-center">
-                                <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 text-blue-600 mb-2">
+                                <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100 text-green-600 mb-2">
                                     <i className="fa-solid fa-user-doctor text-xl"></i>
                                 </span>
                                 <h3 className="text-lg font-medium text-slate-900">Doctor Registration</h3>

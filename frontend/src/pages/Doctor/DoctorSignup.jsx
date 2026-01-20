@@ -34,7 +34,7 @@ function DoctorSignup({ isEmbedded = false }) {
           value={formData.fullName}
           onChange={handleChange}
           placeholder="Enter your full name"
-          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
           required
         />
       </div>
@@ -47,7 +47,7 @@ function DoctorSignup({ isEmbedded = false }) {
           value={formData.email}
           onChange={handleChange}
           placeholder="Enter your email"
-          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
           required
         />
       </div>
@@ -60,7 +60,7 @@ function DoctorSignup({ isEmbedded = false }) {
           value={formData.licenseNumber}
           onChange={handleChange}
           placeholder="Enter your medical license number"
-          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
           required
         />
       </div>
@@ -73,7 +73,7 @@ function DoctorSignup({ isEmbedded = false }) {
           value={formData.specialization}
           onChange={handleChange}
           placeholder="e.g. Cardiologist, General Practitioner"
-          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
           required
         />
       </div>
@@ -86,7 +86,7 @@ function DoctorSignup({ isEmbedded = false }) {
           value={formData.password}
           onChange={handleChange}
           placeholder="Create a password"
-          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
           required
         />
       </div>
@@ -99,14 +99,14 @@ function DoctorSignup({ isEmbedded = false }) {
           value={formData.confirmPassword}
           onChange={handleChange}
           placeholder="Confirm your password"
-          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
           required
         />
       </div>
 
       <button
         type="submit"
-        className="w-full bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700 transition"
+        className="w-full bg-green-600 text-white font-bold py-2 rounded-lg hover:bg-green-700 transition"
       >
         Sign up
       </button>
@@ -175,7 +175,7 @@ function DoctorSignup({ isEmbedded = false }) {
         <div className="mt-6 text-center">
           <p className="text-slate-600">
             Already have an account?{' '}
-            <Link to="/doctor/login" className="text-blue-600 font-bold hover:underline">
+            <Link to="/login?role=doctor" className="text-green-600 font-bold hover:underline">
               Login
             </Link>
           </p>

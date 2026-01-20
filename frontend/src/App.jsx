@@ -7,8 +7,7 @@ import Home from './pages/Home';
 import About from './pages/About';
 import CheckReports from './pages/CheckReports';
 import Analysis from './pages/Analysis';
-import UnifiedLogin from './pages/UnifiedLogin';
-import UnifiedSignup from './pages/UnifiedSignup';
+import Authentication from './pages/Authentication';
 import Profile from './pages/Profile';
 import PatientLogin from './pages/Patient/PatientLogin';
 import PatientSignup from './pages/Patient/PatientSignup';
@@ -37,8 +36,8 @@ function App() {
             <div className="flex-1">
               <Routes>
                 <Route path="/" element={<Home />} />
-                <Route path="/login" element={<UnifiedLogin />} />
-                <Route path="/signup" element={<UnifiedSignup />} />
+                <Route path="/login" element={<Authentication />} />
+                <Route path="/signup" element={<Authentication />} />
                 <Route path="/check-reports" element={<CheckReports />} />
                 <Route path="/analysis" element={<Analysis />} />
                 <Route path="/profile" element={<Profile />} />

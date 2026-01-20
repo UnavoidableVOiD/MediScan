@@ -98,11 +98,11 @@ function PatientSignup({ isEmbedded = false }) {
       const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
       }).join(''));
-      
+
       const userData = JSON.parse(jsonPayload);
-      
+
       console.log('Google Signup Success:', userData);
-      
+
       // Extract name from Google response
       const fullName = userData.name || '';
       const nameParts = fullName.split(' ');
@@ -111,11 +111,11 @@ function PatientSignup({ isEmbedded = false }) {
 
       // After successful Google signup, redirect to login
       // In a real app, you would save this user data to your backend
-      navigate('/patient/login', { 
-        state: { 
+      navigate('/patient/login', {
+        state: {
           message: 'Account created successfully! Please login with your Google account.',
-          email: userData.email 
-        } 
+          email: userData.email
+        }
       });
     } catch (error) {
       console.error('Error processing Google response:', error);
@@ -131,19 +131,19 @@ function PatientSignup({ isEmbedded = false }) {
         },
       });
       const userData = await response.json();
-      
+
       console.log('Google Signup Success:', userData);
-      
+
       const fullName = userData.name || '';
       const nameParts = fullName.split(' ');
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
 
-      navigate('/patient/login', { 
-        state: { 
+      navigate('/patient/login', {
+        state: {
           message: 'Account created successfully! Please login with your Google account.',
-          email: userData.email 
-        } 
+          email: userData.email
+        }
       });
     } catch (error) {
       console.error('Error fetching user info:', error);
@@ -282,7 +282,7 @@ function PatientSignup({ isEmbedded = false }) {
         <div className="mt-6 text-center">
           <p className="text-slate-600">
             Already have an account?{' '}
-            <Link to="/patient/login" className="text-green-600 font-bold hover:underline">
+            <Link to="/login?role=patient" className="text-green-600 font-bold hover:underline">
               Login
             </Link>
           </p>
