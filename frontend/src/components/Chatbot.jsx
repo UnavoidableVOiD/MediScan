@@ -1,128 +1,156 @@
 import React, { useState } from 'react';
-import { useLocation } from 'react-router-dom';
-import { MessageSquare, Send, X, Bot, User, AlertCircle, Maximize2, Minimize2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext.jsx';
 
-const Chatbot = () => {
-    const location = useLocation();
+export default function Chatbot() {
+    const { user } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
-    const [isMinimized, setIsMinimized] = useState(false);
-
-    const [message, setMessage] = useState('');
-    const [chat, setChat] = useState([
-        { role: 'bot', text: 'Hello! I am your MediScan assistant. How can I help you understand your reports today?' }
+    const [messages, setMessages] = useState([
+        {
+            text: "Hello! I'm MediBot. I can help explain your medical reports or answer general health questions.",
+            sender: 'bot'
+        }
     ]);
+    const [input, setInput] = useState('');
+    const [showPopup, setShowPopup] = useState(false);
 
-    // Hidden on Profile page
-    if (location.pathname === '/profile') return null;
+    React.useEffect(() => {
+        // Show popup after 3 seconds
+        const timer = setTimeout(() => {
+            setShowPopup(true);
+        }, 3000);
+        return () => clearTimeout(timer);
+    }, []);
 
-    const handleSend = (e) => {
-        e.preventDefault();
-        if (!message.trim()) return;
+    if (!user || user.role !== 'patient') return null;
 
-        setChat([...chat, { role: 'user', text: message }]);
-        setMessage('');
+    const isPremium = user.plan === 'premium';
 
-        // Mock bot response
+    const handleSend = () => {
+        if (!input.trim()) return;
+
+        if (!isPremium && messages.length > 4) {
+            setMessages((prev) => [
+                ...prev,
+                { text: input, sender: 'user' },
+                { text: '🔒 Upgrade to Premium to continue chatting with MediBot.', sender: 'bot' }
+            ]);
+            setInput('');
+            return;
+        }
+
+        const newMsgs = [...messages, { text: input, sender: 'user' }];
+        setMessages(newMsgs);
+        const prompt = input;
+        setInput('');
+
         setTimeout(() => {
-            setChat(prev => [...prev, { role: 'bot', text: "I'm a demo assistant. In the full version, I'll analyze your specific report data to provide detailed explanations." }]);
-        }, 1000);
+            let response = 'I’m not sure about that. Please consult a doctor.';
+            const lower = prompt.toLowerCase();
+            if (lower.includes('anemia') || lower.includes('hemoglobin'))
+                response =
+                    'Low hemoglobin typically indicates anemia. Try iron-rich foods (spinach, legumes, red meat) and consult your doctor for iron studies.';
+            else if (lower.includes('diabetes') || lower.includes('sugar'))
+                response =
+                    'High glucose can suggest pre-diabetes. Regular exercise, weight management, and an HbA1c test are commonly advised.';
+            else if (lower.includes('hi') || lower.includes('hello')) response = 'Hello! How can I help you today?';
+
+            setMessages((prev) => [...prev, { text: response, sender: 'bot' }]);
+        }, 900);
     };
 
-    if (!isOpen) {
-        return (
-            <button
-                onClick={() => setIsOpen(true)}
-                className="fixed bottom-6 right-6 bg-gradient-to-r from-blue-600 to-emerald-500 text-white p-4 rounded-full shadow-2xl shadow-blue-200 hover:scale-110 hover:-translate-y-1 transition-all z-50 group"
-            >
-                <div className="relative">
-                    <MessageSquare className="h-7 w-7" />
-                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                    </span>
-                </div>
-                {/* Tooltip */}
-                <div className="absolute right-full mr-4 top-1/2 -translate-y-1/2 px-3 py-1 bg-gray-900 text-white text-xs font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                    Ask MediScan AI
-                </div>
-            </button>
-        );
-    }
-
     return (
-        <div className={`fixed bottom-6 right-6 w-96 max-w-[calc(100vw-3rem)] bg-white rounded-3xl shadow-2xl border border-gray-100 z-50 flex flex-col transition-all duration-300 ${isMinimized ? 'h-16' : 'h-[550px]'}`}>
-            {/* Header */}
-            <div className="p-4 bg-gradient-to-r from-blue-600 to-emerald-500 rounded-t-[22px] flex items-center justify-between text-white">
-                <div className="flex items-center gap-3">
-                    <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm">
-                        <Bot className="h-5 w-5" />
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-sm">MediScan Assistant</h3>
-                        {!isMinimized && <p className="text-[10px] text-blue-100 font-medium leading-none">AI Health Partner</p>}
-                    </div>
-                </div>
-                <div className="flex items-center gap-1">
-                    <button onClick={() => setIsMinimized(!isMinimized)} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
-                        {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
-                    </button>
-                    <button onClick={() => setIsOpen(false)} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
-                        <X className="h-4 w-4" />
-                    </button>
-                </div>
-            </div>
-
-            {!isMinimized && (
-                <>
-                    {/* Disclaimer */}
-                    <div className="px-4 py-2 bg-amber-50 border-b border-amber-100 flex items-start gap-2">
-                        <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                        <p className="text-[10px] text-amber-700 font-bold leading-tight uppercase tracking-wider">
-                            Disclaimer: Information only. Not a medical diagnosis. Consult a doctor.
-                        </p>
+        <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+            {isOpen && (
+                <div className="bg-white w-80 h-96 rounded-2xl shadow-2xl border border-slate-200 mb-4 flex flex-col overflow-hidden fade-in">
+                    <div
+                        className={`${isPremium ? 'bg-gradient-to-r from-blue-600 to-indigo-600' : 'bg-slate-700'
+                            } p-4 text-white flex justify-between items-center`}
+                    >
+                        <div className="flex items-center gap-2">
+                            <i className="fa-solid fa-robot"></i>
+                            <span className="font-semibold">
+                                MediBot{' '}
+                            </span>
+                        </div>
+                        <button onClick={() => setIsOpen(false)} className="hover:bg-white/20 p-1 rounded">
+                            <i className="fa-solid fa-xmark"></i>
+                        </button>
                     </div>
 
-                    {/* Chat Area */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-200">
-                        {chat.map((msg, i) => (
-                            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`flex gap-2 max-w-[80%] ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                                    <div className={`flex-shrink-0 h-8 w-8 rounded-xl flex items-center justify-center ${msg.role === 'user' ? 'bg-blue-600' : 'bg-gray-100'}`}>
-                                        {msg.role === 'user' ? <User className="h-4 w-4 text-white" /> : <Bot className="h-4 w-4 text-gray-500" />}
-                                    </div>
-                                    <div className={`p-3 rounded-2xl text-sm font-medium ${msg.role === 'user'
-                                        ? 'bg-blue-600 text-white rounded-tr-none'
-                                        : 'bg-gray-100 text-gray-800 rounded-tl-none'
-                                        }`}>
-                                        {msg.text}
-                                    </div>
-                                </div>
+                    <div className="flex-1 p-4 overflow-y-auto bg-slate-50 space-y-3 text-sm flex flex-col">
+                        {messages.map((m, i) => (
+                            <div
+                                key={i}
+                                className={`p-3 max-w-[85%] ${m.sender === 'user'
+                                    ? 'bg-blue-600 text-white self-end rounded-l-xl rounded-tr-xl ml-auto'
+                                    : 'bg-white border border-slate-200 text-slate-800 self-start rounded-r-xl rounded-tl-xl shadow-sm'
+                                    }`}
+                            >
+                                {m.text}
                             </div>
                         ))}
+
+                        {!isPremium && messages.length > 4 && (
+                            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
+                                <p className="text-xs text-yellow-800 mb-2">You've reached the free message limit.</p>
+                                <Link
+                                    to="/membership"
+                                    className="block w-full bg-yellow-500 text-white text-xs font-bold py-1.5 rounded hover:bg-yellow-600"
+                                >
+                                    Unlock Unlimited Chat
+                                </Link>
+                            </div>
+                        )}
                     </div>
 
-                    {/* Input Area */}
-                    <form onSubmit={handleSend} className="p-4 border-t border-gray-100 bg-gray-50/50 rounded-b-3xl">
-                        <div className="relative flex items-center gap-2">
-                            <input
-                                type="text"
-                                value={message}
-                                onChange={(e) => setMessage(e.target.value)}
-                                placeholder="Type a message..."
-                                className="flex-1 bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-gray-400"
-                            />
-                            <button
-                                type="submit"
-                                className="bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-700 transition-all shadow-md shadow-blue-100"
-                            >
-                                <Send className="h-5 w-5" />
-                            </button>
-                        </div>
-                    </form>
-                </>
+                    <div className="p-3 border-t border-slate-200 bg-white flex gap-2">
+                        <input
+                            type="text"
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                            placeholder="Ask a question..."
+                            className="flex-1 border border-slate-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-blue-500"
+                        />
+                        <button
+                            onClick={handleSend}
+                            className="bg-blue-600 text-white rounded-full w-9 h-9 flex items-center justify-center hover:bg-blue-700 transition"
+                        >
+                            <i className="fa-solid fa-paper-plane text-xs"></i>
+                        </button>
+                    </div>
+                </div>
             )}
+
+            {!isOpen && showPopup && (
+                <div className="bg-white p-4 rounded-2xl shadow-xl border border-slate-200 mb-4 mr-2 animate-bounce-in relative select-none flex items-center gap-3 max-w-[240px]">
+                    <div className="bg-gradient-to-br from-blue-500 to-indigo-600 w-10 h-10 rounded-full flex items-center justify-center text-white shadow-md shrink-0">
+                        <i className="fa-solid fa-robot text-lg"></i>
+                    </div>
+                    <div>
+                        <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-0.5">MediBot</p>
+                        <p className="text-sm font-bold text-slate-800 leading-tight">Hi! I'm your AI assistant.</p>
+                    </div>
+
+                    <div className="absolute -bottom-2 right-8 w-4 h-4 bg-white border-b border-r border-slate-200 transform rotate-45"></div>
+
+                    <button
+                        onClick={(e) => { e.stopPropagation(); setShowPopup(false); }}
+                        className="absolute -top-2 -right-2 bg-slate-100 rounded-full p-1 w-6 h-6 flex items-center justify-center hover:bg-slate-200 text-xs text-slate-500 shadow-sm border border-slate-200"
+                    >
+                        <i className="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            )}
+
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className={`${isPremium ? 'bg-linear-to-r from-blue-600 to-indigo-600' : 'bg-slate-700'
+                    } hover:opacity-90 text-white rounded-full w-14 h-14 shadow-lg flex items-center justify-center transition-transform hover:scale-105`}
+            >
+                <i className={`fa-solid ${isOpen ? 'fa-xmark' : 'fa-message'} text-2xl`}></i>
+            </button>
         </div>
     );
-};
-
-export default Chatbot;
+}
