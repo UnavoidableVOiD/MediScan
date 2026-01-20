@@ -1,125 +1,177 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { logout } from '../store/slices/authSlice';
-import { Shield, Activity, Menu, X, LogOut, User } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext.jsx';
 
-const Navbar = () => {
-    const [isOpen, setIsOpen] = React.useState(false);
-    const dispatch = useDispatch();
+export default function Navbar() {
+    const { user, logout } = useAuth();
     const navigate = useNavigate();
-    const { token, user } = useSelector((state) => state.auth);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-    const handleLogout = () => {
-        dispatch(logout());
-        setIsOpen(false);
-        navigate('/login');
+    const getDashboardLink = () => {
+        if (!user) return '/';
+        if (user.role === 'admin') return '/admin/dashboard';
+        if (user.role === 'doctor') return '/doctor/dashboard';
+        return '/patient/dashboard';
     };
 
     return (
-        <nav className="bg-white border-b border-gray-100 fixed w-full z-50 top-0 left-0">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between h-20">
-                    <div className="flex items-center">
-                        <Link to="/" className="flex items-center gap-2 group">
-                            <div className="bg-gradient-to-br from-blue-600 to-emerald-500 p-2 rounded-lg transition-transform group-hover:scale-105">
-                                <Shield className="h-6 w-6 text-white" />
-                            </div>
-                            <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-emerald-600">
-                                MediScan
-                            </span>
-                        </Link>
-                    </div>
-
-                    {/* Desktop Menu */}
-                    <div className="hidden md:flex items-center space-x-8">
-                        {!token && <Link to="/" className="text-gray-600 hover:text-blue-600 font-semibold transition-colors">Home</Link>}
-                        {token && <Link to="/dashboard" className="text-gray-600 hover:text-blue-600 font-semibold transition-colors">Dashboard</Link>}
-                        {!token && <a href="#features" className="text-gray-600 hover:text-blue-600 font-semibold transition-colors">Features</a>}
-                        {!token && <Link to="/demo" className="text-gray-600 hover:text-emerald-600 font-semibold transition-colors">Demo</Link>}
-
-                        <div className="flex items-center gap-4 ml-6 pl-6 border-l border-gray-100">
-                            {token ? (
-                                <div className="flex items-center gap-4">
-                                    <Link to="/profile" className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-100 hover:bg-gray-100 transition-colors">
-                                        <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                            <User className="h-4 w-4 text-blue-600" />
-                                        </div>
-                                        <span className="text-sm font-bold text-gray-700 capitalize">{user?.first_name || 'User'}</span>
-                                    </Link>
-                                    <button
-                                        onClick={handleLogout}
-                                        className="flex items-center gap-2 text-gray-600 hover:text-red-500 font-bold px-4 py-2 transition-colors"
-                                    >
-                                        <LogOut className="h-4 w-4" />
-                                        Logout
-                                    </button>
-                                </div>
-                            ) : (
-                                <>
-                                    <Link to="/login" className="text-gray-700 hover:text-blue-600 font-bold px-4 py-2 transition-colors">
-                                        Login
-                                    </Link>
-                                    <Link to="/signup" className="bg-gradient-to-r from-blue-600 to-emerald-500 text-white px-7 py-2.5 rounded-full font-bold shadow-lg shadow-blue-200 hover:shadow-xl hover:-translate-y-0.5 transition-all">
-                                        Get Started
-                                    </Link>
-                                </>
-                            )}
+        <nav className="bg-gradient-to-r from-green-600 to-green-500 backdrop-blur-md border-b border-green-700 shadow-lg z-50 sticky top-0 w-full">
+            <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8">
+                <div className="flex justify-between items-center h-20 md:h-24 px-4">
+                    <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
+                        <div className="shrink-0 flex items-center">
+                            <img src="/logo.jpg" alt="MediScan Logo" className="h-16 md:h-20 w-auto mix-blend-multiply" />
                         </div>
                     </div>
 
+                    {/* Desktop Menu */}
+                    <div className="hidden md:flex items-center gap-8 pr-6">
+                        {!user ? (
+                            <>
+                                <Link to="/" className="text-sm font-semibold text-white hover:text-green-100 transition duration-200">Home</Link>
+                                <Link to="/admin/login" className="text-sm font-semibold text-white hover:text-green-100 transition duration-200">Admin</Link>
+                                <Link to="/about" className="text-sm font-semibold text-white hover:text-green-100 transition duration-200">About Us</Link>
+                            </>
+                        ) : (
+                            <div className="flex items-center gap-8">
+                                {user.role === 'patient' && user.plan === 'premium' && (
+                                    <span className="bg-yellow-300 text-yellow-900 text-[10px] font-black px-3 py-1.5 rounded-full flex items-center gap-1.5 border-2 border-yellow-400 uppercase tracking-tighter">
+                                        <i className="fa-solid fa-crown"></i> Pro
+                                    </span>
+                                )}
+
+                                <Link
+                                    to={getDashboardLink()}
+                                    className="text-sm font-semibold text-white hover:text-green-100 transition duration-200 flex items-center gap-2"
+                                >
+                                    Dashboard
+                                </Link>
+
+                                <div className="h-6 w-px bg-slate-200"></div>
+
+                                <div className="flex items-center gap-4">
+                                    <Link
+                                        to="/profile"
+                                        className="flex items-center gap-3 group"
+                                    >
+                                        <div className="relative">
+                                            {user.profileImage ? (
+                                                <img
+                                                    src={user.profileImage}
+                                                    alt="Profile"
+                                                    className="w-10 h-10 rounded-full object-cover border-2 border-slate-100 group-hover:border-blue-400 transition"
+                                                />
+                                            ) : (
+                                                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 group-hover:bg-blue-50 group-hover:text-blue-600 transition">
+                                                    <i className={`fa-solid ${user.role === 'admin' ? 'fa-shield-halved' : user.role === 'doctor' ? 'fa-user-doctor' : 'fa-circle-user'} text-lg`}></i>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </Link>
+
+                                    <button
+                                        onClick={() => {
+                                            logout();
+                                            navigate('/');
+                                        }}
+                                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
+                                        title="Logout"
+                                    >
+                                        <i className="fa-solid fa-right-from-bracket text-lg"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
                     {/* Mobile Menu Button */}
-                    <div className="md:hidden flex items-center">
+                    <div className="flex items-center md:hidden pr-4">
                         <button
-                            onClick={() => setIsOpen(!isOpen)}
-                            className="p-2 rounded-md text-gray-600 hover:bg-gray-50 focus:outline-none"
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                            className="inline-flex items-center justify-center p-2 rounded-lg text-white hover:bg-green-700 transition-colors focus:outline-none"
                         >
-                            {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                            <span className="sr-only">Open main menu</span>
+                            <div className="w-6 h-6 flex flex-col justify-center items-center gap-1.5 relative">
+                                <span className={`block w-5 h-0.5 bg-current transition-all duration-300 ${isMenuOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
+                                <span className={`block w-5 h-0.5 bg-current transition-all duration-300 ${isMenuOpen ? 'opacity-0' : ''}`}></span>
+                                <span className={`block w-5 h-0.5 bg-current transition-all duration-300 ${isMenuOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
+                            </div>
                         </button>
                     </div>
                 </div>
             </div>
 
+
             {/* Mobile Menu */}
-            {isOpen && (
-                <div className="md:hidden bg-white border-b border-gray-100 animate-in fade-in slide-in-from-top-4 duration-200">
-                    <div className="px-4 pt-2 pb-6 space-y-2">
-                        {!token && <Link to="/" onClick={() => setIsOpen(false)} className="block px-3 py-3 text-gray-700 font-semibold hover:bg-gray-50 rounded-lg">Home</Link>}
-                        {token && <Link to="/dashboard" onClick={() => setIsOpen(false)} className="block px-3 py-3 text-gray-700 font-semibold hover:bg-gray-50 rounded-lg">Dashboard</Link>}
-                        {!token && <a href="#features" onClick={() => setIsOpen(false)} className="block px-3 py-3 text-gray-700 font-semibold hover:bg-gray-50 rounded-lg">Features</a>}
-                        {!token && <Link to="/demo" onClick={() => setIsOpen(false)} className="block px-3 py-3 text-gray-700 font-semibold hover:bg-gray-50 rounded-lg">Demo</Link>}
-
-                        {token ? (
-                            <>
-                                <div className="px-3 py-3 flex items-center gap-3 border-t border-gray-50 mt-2">
-                                    <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                        <User className="h-5 w-5 text-blue-600" />
+            <div className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out border-t border-green-700 bg-green-500 ${isMenuOpen ? 'max-h-96' : 'max-h-0'}`}>
+                <div className="px-4 pt-4 pb-6 space-y-3">
+                    {!user ? (
+                        <div className="space-y-3">
+                            <Link
+                                to="/"
+                                className="block px-4 py-3 rounded-xl text-base font-medium text-white hover:bg-green-400 active:bg-green-700 transition"
+                                onClick={() => setIsMenuOpen(false)}
+                            >
+                                <i className="fa-solid fa-house mr-3 text-green-100"></i> Home
+                            </Link>
+                            <Link
+                                to="/admin/login"
+                                className="block px-4 py-3 rounded-xl text-base font-medium text-white hover:bg-green-400 active:bg-green-700 transition"
+                                onClick={() => setIsMenuOpen(false)}
+                            >
+                                <i className="fa-solid fa-shield-halved mr-3 text-green-100"></i> Admin
+                            </Link>
+                            <Link
+                                to="/about"
+                                className="block px-4 py-3 rounded-xl text-base font-medium text-white hover:bg-green-400 active:bg-green-700 transition"
+                                onClick={() => setIsMenuOpen(false)}
+                            >
+                                <i className="fa-solid fa-circle-info mr-3 text-slate-400"></i> About Us
+                            </Link>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            <div className="flex items-center gap-3 px-4 py-3 mb-2 bg-slate-50 rounded-2xl">
+                                {user.profileImage ? (
+                                    <img src={user.profileImage} alt="" className="w-10 h-10 rounded-full border border-slate-200" />
+                                ) : (
+                                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-slate-400">
+                                        <i className="fa-solid fa-user"></i>
                                     </div>
-                                    <div>
-                                        <p className="font-bold text-gray-900 capitalize">{user?.first_name} {user?.last_name}</p>
-                                        <p className="text-xs text-gray-500">{user?.email}</p>
-                                    </div>
+                                )}
+                                <div>
+                                    <div className="text-sm font-bold text-slate-900">{user.role.charAt(0).toUpperCase() + user.role.slice(1)}</div>
+                                    <div className="text-[10px] text-slate-500 uppercase tracking-wider">{user.plan || 'Free'} Plan</div>
                                 </div>
-                                <Link to="/profile" onClick={() => setIsOpen(false)} className="block px-3 py-3 text-gray-700 font-semibold hover:bg-gray-50 rounded-lg">Profile</Link>
-                                <button
-                                    onClick={handleLogout}
-                                    className="w-full text-left px-3 py-3 text-red-600 font-bold hover:bg-red-50 rounded-lg flex items-center gap-2"
-                                >
-                                    <LogOut className="h-5 w-5" />
-                                    Logout
-                                </button>
-                            </>
-                        ) : (
-                            <>
-                                <Link to="/login" onClick={() => setIsOpen(false)} className="block px-3 py-3 text-gray-700 font-bold hover:bg-gray-50 rounded-lg">Login</Link>
-                                <Link to="/signup" onClick={() => setIsOpen(false)} className="block px-3 py-4 bg-gradient-to-r from-blue-600 to-emerald-500 text-white text-center rounded-xl font-bold">Get Started</Link>
-                            </>
-                        )}
-                    </div>
+                            </div>
+                            <Link
+                                to={getDashboardLink()}
+                                className="block px-4 py-3 rounded-xl text-base font-medium text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition"
+                                onClick={() => setIsMenuOpen(false)}
+                            >
+                                <i className="fa-solid fa-chart-line mr-3 text-slate-400"></i> Dashboard
+                            </Link>
+                            <Link
+                                to="/profile"
+                                className="block px-4 py-3 rounded-xl text-base font-medium text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition"
+                                onClick={() => setIsMenuOpen(false)}
+                            >
+                                <i className="fa-solid fa-user-gear mr-3 text-slate-400"></i> Settings
+                            </Link>
+                            <button
+                                onClick={() => {
+                                    logout();
+                                    navigate('/');
+                                    setIsMenuOpen(false);
+                                }}
+                                className="block w-full text-left px-4 py-3 rounded-xl text-base font-medium text-red-500 hover:bg-red-50 active:bg-red-100 transition mt-4"
+                            >
+                                <i className="fa-solid fa-right-from-bracket mr-3"></i> Logout
+                            </button>
+                        </div>
+                    )}
                 </div>
-            )}
-        </nav>
+            </div>
+        </nav >
     );
-};
-
-export default Navbar;
+}
