@@ -27,19 +27,13 @@ export default function Home() {
             Try Demo (Instant Report)
           </button>
           <Link
-            to="/patient/signup"
+            to="/login"
             className="bg-white text-slate-800 font-bold px-8 py-4 rounded-xl shadow-md hover:bg-slate-50 transition border border-slate-200 block text-center w-full sm:w-auto transform hover:-translate-y-1 hover:shadow-lg"
           >
-            For Patients
-          </Link>
-          <Link
-            to="/doctor/login"
-            className="bg-white text-slate-800 font-bold px-8 py-4 rounded-xl shadow-md hover:bg-slate-50 transition border border-slate-200 block text-center w-full sm:w-auto transform hover:-translate-y-1 hover:shadow-lg"
-          >
-            For Doctors
+            Login / Sign Up
           </Link>
         </div>
       </div>
-    </div>
+    </div >
   );
 }

@@ -31,7 +31,7 @@ function DoctorLogin({ isEmbedded = false }) {
           value={formData.email}
           onChange={handleChange}
           placeholder="Enter your email"
-          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
           required
         />
       </div>
@@ -44,14 +44,14 @@ function DoctorLogin({ isEmbedded = false }) {
           value={formData.password}
           onChange={handleChange}
           placeholder="Enter your password"
-          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
           required
         />
       </div>
 
       <button
         type="submit"
-        className="w-full bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700 transition"
+        className="w-full bg-green-600 text-white font-bold py-2 rounded-lg hover:bg-green-700 transition"
       >
         Login
       </button>
@@ -164,20 +164,13 @@ function DoctorLogin({ isEmbedded = false }) {
             </button>
           )}
 
-          <button
-            type="button"
-            onClick={() => handleSocialLogin('Phone')}
-            className="flex items-center justify-center py-2.5 border border-slate-200 rounded-lg hover:bg-slate-50 transition"
-            title="Sign in with Phone"
-          >
-            <i className="fa-solid fa-phone text-green-600 text-xl"></i>
-          </button>
+
         </div>
 
         <div className="mt-6 text-center">
           <p className="text-slate-600">
             Don't have an account?{' '}
-            <Link to="/doctor/signup" className="text-blue-600 font-bold hover:underline">
+            <Link to="/signup?role=doctor" className="text-green-600 font-bold hover:underline">
               Sign up
             </Link>
           </p>
