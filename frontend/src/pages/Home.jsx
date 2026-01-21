@@ -15,7 +15,7 @@ export default function Home() {
           </h1>
           <p className="text-base md:text-lg text-slate-600 max-w-2xl mx-auto mb-8 px-2">
             MediScan uses advanced AI to analyze blood reports, X-rays, and prescriptions. Get instant
-            explanations, risk predictions, and connect with doctors.
+            explanations and personalized health risk predictions.
           </p>
         </div>
 

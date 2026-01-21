@@ -24,6 +24,7 @@ import AdminDashboard from './pages/Admin/Dashboard';
 import AdminStatistics from './pages/Admin/Statistics';
 import AdminUsers from './pages/Admin/Users';
 import AdminVerifyDoctor from './pages/Admin/VerifyDoctor';
+import UnifiedLogin from './pages/UnifiedLogin';
 import './App.css';
 
 function App() {
