@@ -138,9 +138,6 @@ export default function Analysis() {
                                 <p className="text-sm text-slate-600">Monitor blood sugar levels daily.</p>
                             </li>
                         </ul>
-                        <button className="w-full mt-6 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition">
-                            Find a Doctor Near Me
-                        </button>
                     </div>
 
                     <div className="bg-gradient-to-br from-purple-600 to-indigo-700 rounded-2xl p-6 text-white text-center">
