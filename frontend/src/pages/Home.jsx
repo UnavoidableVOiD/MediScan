@@ -14,7 +14,8 @@ export default function Home() {
             Understand Your Medical Reports in <span className="text-green-600">Seconds</span>
           </h1>
           <p className="text-base md:text-lg text-slate-600 max-w-2xl mx-auto mb-8 px-2">
-            MediScan uses advanced AI to analyze blood reports, X-rays, and prescriptions. Get instant
+            MediScan uses advanced AI to analyze <b> Blood reports,Diabetes,Kidney,Liver,Heart,Anemia</b>. 
+            Get instant
             explanations and personalized health risk predictions.
           </p>
         </div>

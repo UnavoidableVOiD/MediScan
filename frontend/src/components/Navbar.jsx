@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import logo from '../assets/logo.jpg';
+import logoutLogo from '../assets/logout_logo.svg';
+import defaultMale from '../assets/default_male.svg';
+import defaultFemale from '../assets/default_female.svg';
 
 export default function Navbar() {
     const { user, logout } = useAuth();
@@ -21,12 +25,8 @@ export default function Navbar() {
                     {/* Logo Section */}
                     <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
                         <div className="shrink-0 flex items-center gap-3">
-                            <div className="bg-white p-2 rounded-xl shadow-md">
-                                <i className="fa-solid fa-heart-pulse text-2xl text-green-600"></i>
-                            </div>
-                            <div>
-                                <h1 className="text-2xl font-black text-white tracking-tight">MediScan</h1>
-                                <p className="text-[10px] text-green-100 font-medium tracking-widest uppercase">AI Diagnostics</p>
+                            <div className="shrink-0 bg-transparent">
+                                <img src={logo} alt="MediScan Logo" className="h-20 w-auto object-contain mix-blend-multiply" />
                             </div>
                         </div>
                     </div>
@@ -58,20 +58,18 @@ export default function Navbar() {
                                 <div className="flex items-center gap-4">
                                     <Link
                                         to="/profile"
-                                        className="flex items-center gap-3 group"
+                                        className="flex items-center gap-3 group bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full transition border border-white/20"
                                     >
+                                        <div className="text-right hidden lg:block">
+                                            <div className="text-xs font-black text-white leading-none capitalize">{user.name || 'Guest'}</div>
+                                            <div className="text-[9px] text-green-100 font-bold uppercase tracking-tighter opacity-70">{user.role}</div>
+                                        </div>
                                         <div className="relative">
-                                            {user.profileImage ? (
-                                                <img
-                                                    src={user.profileImage}
-                                                    alt="Profile"
-                                                    className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-md group-hover:border-green-200 transition"
-                                                />
-                                            ) : (
-                                                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-green-600 shadow-md group-hover:bg-green-50 transition">
-                                                    <i className={`fa-solid ${user.role === 'admin' ? 'fa-shield-halved' : user.role === 'doctor' ? 'fa-user-doctor' : 'fa-circle-user'} text-lg`}></i>
-                                                </div>
-                                            )}
+                                            <img
+                                                src={user.profileImage || (user.gender === 'female' ? defaultFemale : defaultMale)}
+                                                alt="Profile"
+                                                className="w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm group-hover:scale-105 transition"
+                                            />
                                         </div>
                                     </Link>
 
@@ -80,10 +78,11 @@ export default function Navbar() {
                                             logout();
                                             navigate('/');
                                         }}
-                                        className="w-10 h-10 flex items-center justify-center text-white/80 hover:text-white hover:bg-red-500/20 rounded-lg transition"
+                                        className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-white rounded-xl border border-red-500/30 transition group"
                                         title="Logout"
                                     >
-                                        <i className="fa-solid fa-right-from-bracket text-lg"></i>
+                                        <img src={logoutLogo} alt="" className="w-6 h-6 object-contain group-hover:scale-110 transition" />
+                                        <span className="text-sm font-bold">Logout</span>
                                     </button>
                                 </div>
                             </div>
@@ -148,16 +147,14 @@ export default function Navbar() {
                     ) : (
                         <div className="space-y-2">
                             <div className="flex items-center gap-3 px-4 py-4 mb-2 bg-green-700/30 rounded-2xl border border-green-500/30">
-                                {user.profileImage ? (
-                                    <img src={user.profileImage} alt="" className="w-12 h-12 rounded-full border-2 border-white shadow-sm" />
-                                ) : (
-                                    <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-green-600 shadow-sm">
-                                        <i className="fa-solid fa-user text-lg"></i>
-                                    </div>
-                                )}
+                                <img src={user.profileImage || (user.gender === 'female' ? defaultFemale : defaultMale)} alt="" className="w-12 h-12 rounded-full border-2 border-white shadow-sm object-cover" />
                                 <div>
-                                    <div className="text-base font-black text-white">{user.role.charAt(0).toUpperCase() + user.role.slice(1)}</div>
-                                    <div className="text-[10px] text-green-200 uppercase tracking-wider font-bold">{user.plan || 'Free'} Plan</div>
+                                    <div className="text-base font-black text-white capitalize">{user.name || 'Guest User'}</div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="text-[10px] text-green-200 uppercase tracking-wider font-bold">{user.role}</div>
+                                        <div className="w-1 h-1 bg-green-400 rounded-full opacity-50"></div>
+                                        <div className="text-[10px] text-green-200 uppercase tracking-wider font-bold">{user.plan || 'Free'} Plan</div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -184,9 +181,10 @@ export default function Navbar() {
                                     navigate('/');
                                     setIsMenuOpen(false);
                                 }}
-                                className="block w-full text-left px-4 py-3 rounded-xl text-base font-bold text-red-200 hover:text-red-100 hover:bg-red-500/20 transition mt-2"
+                                className="flex w-full items-center gap-3 px-4 py-3 rounded-xl text-base font-bold text-white hover:bg-red-500/20 transition border border-transparent hover:border-red-500/30 mt-2"
                             >
-                                <i className="fa-solid fa-right-from-bracket mr-3"></i> Logout
+                                <img src={logoutLogo} alt="" className="w-8 h-8 object-contain" />
+                                <span>Logout</span>
                             </button>
                         </div>
                     )}

@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import healthLogo from '../../assets/health_logo.png';
+import uploadLogo from '../../assets/upload_logo.png';
+import reportsLogo from '../../assets/reports_logo.png';
+import totalReportsLogo from '../../assets/total_reports_logo.png';
+import recentReportsLogo from '../../assets/recent_reports_logo.png';
+import chatsLogo from '../../assets/chats_logo.svg';
+import analysisLogo from '../../assets/analysis_logo.svg';
+import defaultMale from '../../assets/default_male.svg';
+import defaultFemale from '../../assets/default_female.svg';
 
 function Dashboard() {
   const { user } = useAuth();
@@ -20,23 +29,23 @@ function Dashboard() {
     {
       title: 'Health Dashboard',
       description: 'Monitor your health metrics and trends',
-      icon: 'fa-heart-pulse',
+      logo: healthLogo,
       link: '/patient/health-dashboard',
-      color: 'from-red-500 to-red-600'
+      color: 'bg-red-50'
     },
     {
       title: 'Upload Report',
       description: 'Upload medical reports for AI analysis',
-      icon: 'fa-file-upload',
+      logo: uploadLogo,
       link: '/patient/upload-report',
-      color: 'from-blue-500 to-blue-600'
+      color: 'bg-blue-50'
     },
     {
       title: 'View Reports',
       description: 'Access and manage your medical reports',
-      icon: 'fa-folder-open',
+      logo: reportsLogo,
       link: '/patient/view-report',
-      color: 'from-green-500 to-green-600'
+      color: 'bg-green-50'
     }
   ];
 
@@ -44,19 +53,28 @@ function Dashboard() {
     <div className="flex-1 min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 px-4 py-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">
-            Welcome back{user?.name ? `, ${user.name.split(' ')[0]}` : ''}!
-          </h1>
-          <p className="text-slate-600 text-lg">Manage your health records and consultations</p>
+        <div className="mb-8 flex flex-col md:flex-row md:items-center gap-6">
+          <div className="w-20 h-20 rounded-full border-4 border-white shadow-lg overflow-hidden shrink-0">
+            <img
+              src={user?.profileImage || (user?.gender === 'female' ? defaultFemale : defaultMale)}
+              alt=""
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <div>
+            <h1 className="text-4xl font-bold text-slate-900 mb-2">
+              Welcome back{user?.name ? `, ${user.name.split(' ')[0]}` : ''}!
+            </h1>
+            <p className="text-slate-600 text-lg">Manage your health records and consultations</p>
+          </div>
         </div>
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white p-6 rounded-xl shadow-lg border border-slate-200 hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <i className="fa-solid fa-file-medical text-blue-600 text-xl"></i>
+              <div className="w-12 h-12 bg-blue-50 rounded-lg overflow-hidden p-2">
+                <img src={totalReportsLogo} alt="" className="w-full h-full object-contain" />
               </div>
             </div>
             <h3 className="text-2xl font-bold text-slate-900 mb-1">{stats.totalReports}</h3>
@@ -65,8 +83,8 @@ function Dashboard() {
 
           <div className="bg-white p-6 rounded-xl shadow-lg border border-slate-200 hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-green-100 rounded-lg">
-                <i className="fa-solid fa-clock-rotate-left text-green-600 text-xl"></i>
+              <div className="w-12 h-12 bg-green-50 rounded-lg overflow-hidden p-2">
+                <img src={recentReportsLogo} alt="" className="w-full h-full object-contain" />
               </div>
             </div>
             <h3 className="text-2xl font-bold text-slate-900 mb-1">{stats.recentReports}</h3>
@@ -75,8 +93,8 @@ function Dashboard() {
 
           <div className="bg-white p-6 rounded-xl shadow-lg border border-slate-200 hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <i className="fa-solid fa-message text-purple-600 text-xl"></i>
+              <div className="w-12 h-12 rounded-lg overflow-hidden shadow-sm">
+                <img src={chatsLogo} alt="" className="w-full h-full object-cover" />
               </div>
             </div>
             <h3 className="text-2xl font-bold text-slate-900 mb-1">{stats.activeChats}</h3>
@@ -85,8 +103,8 @@ function Dashboard() {
 
           <div className="bg-white p-6 rounded-xl shadow-lg border border-slate-200 hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-orange-100 rounded-lg">
-                <i className="fa-solid fa-hourglass-half text-orange-600 text-xl"></i>
+              <div className="w-12 h-12 rounded-lg overflow-hidden shadow-sm">
+                <img src={analysisLogo} alt="" className="w-full h-full object-cover" />
               </div>
             </div>
             <h3 className="text-2xl font-bold text-slate-900 mb-1">{stats.pendingAnalysis}</h3>
@@ -104,8 +122,8 @@ function Dashboard() {
                 to={action.link}
                 className="group bg-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-slate-200 hover:-translate-y-1"
               >
-                <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                  <i className={`fa-solid ${action.icon} text-white text-2xl`}></i>
+                <div className={`w-16 h-16 rounded-2xl ${action.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-sm overflow-hidden p-3`}>
+                  <img src={action.logo} alt="" className="w-full h-full object-contain" />
                 </div>
                 <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-green-600 transition-colors">
                   {action.title}

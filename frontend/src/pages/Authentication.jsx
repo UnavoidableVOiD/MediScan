@@ -5,6 +5,7 @@ import PatientSignup from './Patient/PatientSignup';
 import DoctorLogin from './Doctor/DoctorLogin';
 import DoctorSignup from './Doctor/DoctorSignup';
 import AdminLogin from './Admin/AdminLogin';
+import aiLogo from '../assets/ai_diagnostics_logo.svg';
 
 export default function Authentication() {
     const [searchParams] = useSearchParams();
@@ -53,8 +54,8 @@ export default function Authentication() {
 
                 <div className="relative z-20 flex flex-col justify-between p-16 w-full text-white">
                     <div>
-                        <div className="w-16 h-16 bg-white/10 backdrop-blur-lg rounded-2xl flex items-center justify-center mb-8 border border-white/20">
-                            <i className="fa-solid fa-heart-pulse text-3xl text-green-300"></i>
+                        <div className="w-20 h-20 rounded-2xl overflow-hidden mb-8 shadow-2xl">
+                            <img src={aiLogo} alt="AI Diagnostics" className="w-full h-full object-cover" />
                         </div>
                         <h2 className="text-5xl font-black mb-6 tracking-tight leading-tight">
                             Advanced AI <br />

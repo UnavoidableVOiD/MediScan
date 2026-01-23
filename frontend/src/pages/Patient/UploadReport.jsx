@@ -7,7 +7,6 @@ function UploadReport() {
   // Steps: 1 = Upload, 2 = Scanning, 3 = Verify
   const [step, setStep] = useState(1);
   const [file, setFile] = useState(null);
-  const [reportType, setReportType] = useState('');
   const [date, setDate] = useState('');
 
   // Data extraction state
@@ -22,7 +21,7 @@ function UploadReport() {
   const mockScanResult = {
     patientName: 'Guest User',
     reportDate: date || new Date().toISOString().split('T')[0],
-    testType: reportType || 'Blood Test',
+    testType: 'Blood Test',
     values: [
       { test: 'Hemoglobin', value: '11.2', unit: 'g/dL', status: 'low' },
       { test: 'Glucose', value: '105', unit: 'mg/dL', status: 'high' }
@@ -80,7 +79,6 @@ function UploadReport() {
     const newErrors = {};
 
     if (!file) newErrors.file = 'Please select a file';
-    if (!reportType) newErrors.reportType = 'Please select a report type';
     if (!date) newErrors.date = 'Please select a date';
 
     if (Object.keys(newErrors).length > 0) {
@@ -96,7 +94,7 @@ function UploadReport() {
       setExtractedData({
         ...mockScanResult,
         reportDate: date,
-        testType: reportType
+        testType: 'Blood Test'
       });
       setStep(3);
     }, 2500);
@@ -143,31 +141,6 @@ function UploadReport() {
         {/* Step 1: Upload Form */}
         {step === 1 && (
           <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl shadow-lg border border-slate-200 space-y-6">
-            {/* Report Type */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
-                Report Type <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={reportType}
-                onChange={(e) => {
-                  setReportType(e.target.value);
-                  setErrors({ ...errors, reportType: '' });
-                }}
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 transition ${errors.reportType ? 'border-red-500' : 'border-slate-300'
-                  }`}
-              >
-                <option value="">Select report type</option>
-                <option value="Blood Test">Blood Test</option>
-                <option value="Urinalysis">Urinalysis</option>
-                <option value="Lipid Profile">Lipid Profile</option>
-                <option value="Liver Function Test">Liver Function Test</option>
-              </select>
-              {errors.reportType && (
-                <p className="mt-1 text-sm text-red-600">{errors.reportType}</p>
-              )}
-            </div>
-
             {/* Report Date */}
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
@@ -200,10 +173,10 @@ function UploadReport() {
                 onDragOver={handleDrag}
                 onDrop={handleDrop}
                 className={`border-2 border-dashed rounded-xl p-8 text-center transition ${dragActive
-                    ? 'border-green-500 bg-green-50'
-                    : errors.file
-                      ? 'border-red-500 bg-red-50'
-                      : 'border-slate-300 bg-slate-50'
+                  ? 'border-green-500 bg-green-50'
+                  : errors.file
+                    ? 'border-red-500 bg-red-50'
+                    : 'border-slate-300 bg-slate-50'
                   }`}
               >
                 <input

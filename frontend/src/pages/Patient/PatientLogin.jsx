@@ -84,12 +84,12 @@ function PatientLogin({ isEmbedded = false }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-3">
           {!isIOS() && (
             <button
               type="button"
               onClick={() => handleSocialLogin('Google')}
-              className="flex items-center justify-center py-2.5 border border-slate-200 rounded-lg hover:bg-slate-50 transition"
+              className="flex items-center justify-center gap-3 w-full py-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition shadow-sm font-semibold text-slate-700"
               title="Sign in with Google"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -98,21 +98,22 @@ function PatientLogin({ isEmbedded = false }) {
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
                 <path fill="#4285F4" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
               </svg>
+              <span>Continue with Google</span>
             </button>
           )}
           {isIOS() && (
             <button
               type="button"
               onClick={() => handleSocialLogin('Apple')}
-              className="flex items-center justify-center py-2.5 border border-slate-200 rounded-lg hover:bg-slate-50 transition"
+              className="flex items-center justify-center gap-3 w-full py-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition shadow-sm font-semibold text-slate-700"
               title="Sign in with Apple"
             >
               <svg className="w-5 h-5 text-slate-900" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M17.05 20.28c-.98.95-2.05 2.34-3.41 2.34-1.2 0-2.46-.9-3.69-2.34-.39-.45-.68-.85-.88-1.18-.74-1.22-1.28-2.91-1.28-4.78 0-3.32 2.34-5.24 4.54-5.24 1.13 0 2.22.56 2.83.56.55 0 1.93-.65 3.09-.65.25 0 .58.02.94.07 1.48.23 2.76.99 3.56 2.06-.09.06-2.02 1.13-2.02 4.3 0 2.94 2.13 4.29 2.18 4.32-.04.14-.3.94-1.19 2.22-.59.85-1.45 2.15-2.21 2.15l-2.46.17zm-4.32-15.5c.61-.75.98-1.74.98-2.78 0-.15 0-.29-.02-.44-1.12.06-2.3.62-2.97 1.41-.53.63-.9 1.55-.9 2.5 0 .15.01.3.02.41 1.02-.07 2.26-.59 2.89-1.1z" />
               </svg>
+              <span>Continue with Apple</span>
             </button>
           )}
-
         </div>
       </div>
     );
@@ -138,12 +139,12 @@ function PatientLogin({ isEmbedded = false }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 mt-6">
+        <div className="space-y-3 mt-6">
           {!isIOS() && (
             <button
               type="button"
               onClick={() => handleSocialLogin('Google')}
-              className="flex items-center justify-center py-2.5 border border-slate-200 rounded-lg hover:bg-slate-50 transition"
+              className="flex items-center justify-center gap-3 w-full py-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition shadow-sm font-semibold text-slate-700"
               title="Sign in with Google"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -152,29 +153,32 @@ function PatientLogin({ isEmbedded = false }) {
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
                 <path fill="#4285F4" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
               </svg>
+              <span>Continue with Google</span>
             </button>
           )}
           {isIOS() && (
             <button
               type="button"
               onClick={() => handleSocialLogin('Apple')}
-              className="flex items-center justify-center py-2.5 border border-slate-200 rounded-lg hover:bg-slate-50 transition"
+              className="flex items-center justify-center gap-3 w-full py-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition shadow-sm font-semibold text-slate-700"
               title="Sign in with Apple"
             >
               <svg className="w-5 h-5 text-slate-900" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M17.05 20.28c-.98.95-2.05 2.34-3.41 2.34-1.2 0-2.46-.9-3.69-2.34-.39-.45-.68-.85-.88-1.18-.74-1.22-1.28-2.91-1.28-4.78 0-3.32 2.34-5.24 4.54-5.24 1.13 0 2.22.56 2.83.56.55 0 1.93-.65 3.09-.65.25 0 .58.02.94.07 1.48.23 2.76.99 3.56 2.06-.09.06-2.02 1.13-2.02 4.3 0 2.94 2.13 4.29 2.18 4.32-.04.14-.3.94-1.19 2.22-.59.85-1.45 2.15-2.21 2.15l-2.46.17zm-4.32-15.5c.61-.75.98-1.74.98-2.78 0-.15 0-.29-.02-.44-1.12.06-2.3.62-2.97 1.41-.53.63-.9 1.55-.9 2.5 0 .15.01.3.02.41 1.02-.07 2.26-.59 2.89-1.1z" />
               </svg>
+              <span>Continue with Apple</span>
             </button>
           )}
           <button
             type="button"
             onClick={() => handleSocialLogin('Phone')}
-            className="flex items-center justify-center py-2.5 border border-slate-200 rounded-lg hover:bg-slate-50 transition"
+            className="flex items-center justify-center gap-3 w-full py-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition shadow-sm font-semibold text-slate-700"
             title="Sign in with Phone"
           >
             <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 24 24">
               <path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 00-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z" />
             </svg>
+            <span>Continue with Phone</span>
           </button>
         </div>
 
