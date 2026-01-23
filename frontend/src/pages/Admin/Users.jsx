@@ -21,31 +21,28 @@ function Users() {
           <div className="flex gap-4">
             <button
               onClick={() => setFilter('all')}
-              className={`px-4 py-2 rounded-lg font-semibold transition ${
-                filter === 'all'
+              className={`px-4 py-2 rounded-lg font-semibold transition ${filter === 'all'
                   ? 'bg-purple-600 text-white'
                   : 'bg-white text-slate-700 border border-slate-300'
-              }`}
+                }`}
             >
               All Users
             </button>
             <button
               onClick={() => setFilter('patients')}
-              className={`px-4 py-2 rounded-lg font-semibold transition ${
-                filter === 'patients'
+              className={`px-4 py-2 rounded-lg font-semibold transition ${filter === 'patients'
                   ? 'bg-purple-600 text-white'
                   : 'bg-white text-slate-700 border border-slate-300'
-              }`}
+                }`}
             >
               Patients
             </button>
             <button
               onClick={() => setFilter('doctors')}
-              className={`px-4 py-2 rounded-lg font-semibold transition ${
-                filter === 'doctors'
+              className={`px-4 py-2 rounded-lg font-semibold transition ${filter === 'doctors'
                   ? 'bg-purple-600 text-white'
                   : 'bg-white text-slate-700 border border-slate-300'
-              }`}
+                }`}
             >
               Doctors
             </button>
@@ -78,11 +75,10 @@ function Users() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{user.type}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
-                        className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          user.status === 'active'
+                        className={`px-2 py-1 text-xs font-semibold rounded-full ${user.status === 'active'
                             ? 'bg-green-100 text-green-800'
                             : 'bg-gray-100 text-gray-800'
-                        }`}
+                          }`}
                       >
                         {user.status}
                       </span>

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { isIOS } from '../../utils/platform';
+import { loadGoogleScript, initializeGoogleSignIn, decodeGoogleCredential } from '../../services/GoogleAuthService';
 
 function DoctorLogin({ isEmbedded = false }) {
   const [formData, setFormData] = useState({
@@ -9,16 +10,27 @@ function DoctorLogin({ isEmbedded = false }) {
   });
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
+  useEffect(() => {
+    loadGoogleScript()
+      .then(() => {
+        console.log('Google Script loaded (Doctor Login)');
+      })
+      .catch(console.error);
+  }, []);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Doctor Login:', formData);
-    // In a real app: await login(formData);
-    navigate('/doctor/dashboard', { state: { welcomeMessage: 'Welcome Back, Dr. Sharma!' } });
+  const handleGoogleResponse = async (response) => {
+    try {
+      const userData = decodeGoogleCredential(response.credential);
+      if (!userData) return;
+
+      console.log('Doctor Google Login Success:', userData);
+
+      // Mirroring existing login logic:
+      navigate('/doctor/dashboard', { state: { welcomeMessage: `Welcome Back, Dr. ${userData.name.split(' ')[0]}!` } });
+    } catch (error) {
+      console.error('Doctor Google login error:', error);
+      alert('Google login failed');
+    }
   };
 
   const formContent = (
@@ -59,7 +71,14 @@ function DoctorLogin({ isEmbedded = false }) {
   );
 
   const handleSocialLogin = (provider) => {
-    console.log(`Doctor ${provider} login clicked`);
+    if (provider === 'Google') {
+      initializeGoogleSignIn(handleGoogleResponse);
+      if (window.google?.accounts?.id) {
+        window.google.accounts.id.prompt();
+      }
+    } else {
+      console.log(`${provider} login clicked`);
+    }
   };
 
   if (isEmbedded) {

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { isIOS } from '../../utils/platform';
+import { loadGoogleScript, initializeGoogleSignIn, decodeGoogleCredential } from '../../services/GoogleAuthService';
 
 function PatientLogin({ isEmbedded = false }) {
   const [formData, setFormData] = useState({
@@ -10,6 +11,36 @@ function PatientLogin({ isEmbedded = false }) {
   });
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    loadGoogleScript()
+      .then(() => {
+        console.log('Google Script loaded');
+      })
+      .catch(console.error);
+  }, []);
+
+  const handleGoogleResponse = async (response) => {
+    try {
+      const userData = decodeGoogleCredential(response.credential);
+      if (!userData) return;
+
+      console.log('Google Login Success:', userData);
+
+      // In a real app, verify with backend here.
+      // For now, mirroring existing login logic:
+      login({
+        email: userData.email,
+        name: userData.name,
+        picture: userData.picture,
+        role: 'patient',
+      });
+      navigate('/patient/dashboard', { state: { welcomeMessage: `Welcome Back, ${userData.name}!` } });
+    } catch (error) {
+      console.error('Google login error:', error);
+      alert('Google login failed');
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -66,8 +97,14 @@ function PatientLogin({ isEmbedded = false }) {
   );
 
   const handleSocialLogin = (provider) => {
-    console.log(`${provider} login clicked`);
-    // In a real app, integrate with Firebase/Other Auth Provider
+    if (provider === 'Google') {
+      initializeGoogleSignIn(handleGoogleResponse);
+      if (window.google?.accounts?.id) {
+        window.google.accounts.id.prompt();
+      }
+    } else {
+      console.log(`${provider} login clicked`);
+    }
   };
 
   if (isEmbedded) {

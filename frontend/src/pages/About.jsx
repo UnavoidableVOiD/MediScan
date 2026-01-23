@@ -17,7 +17,7 @@ export default function About() {
           <div className="bg-white rounded-xl p-6 md:p-8 shadow-md border border-slate-200">
             <h2 className="text-2xl font-bold text-slate-900 mb-3">Our Mission</h2>
             <p className="text-slate-600 leading-relaxed">
-              MediScan is revolutionizing healthcare by using advanced AI to make medical reports understandable to everyone. 
+              MediScan is revolutionizing healthcare by using advanced AI to make medical reports understandable to everyone.
               We believe that patients should have instant access to explanations of their medical tests, helping them make informed decisions about their health.
             </p>
           </div>
@@ -79,7 +79,7 @@ export default function About() {
 
           <div className="bg-green-50 rounded-xl p-6 md:p-8 border border-green-200">
             <p className="text-slate-600 leading-relaxed mb-4">
-              MediScan is your trusted companion in understanding your health. Whether you're a patient looking to understand your medical reports 
+              MediScan is your trusted companion in understanding your health. Whether you're a patient looking to understand your medical reports
               or a healthcare professional seeking better tools, we're here to help.
             </p>
             <p className="text-slate-600 leading-relaxed">

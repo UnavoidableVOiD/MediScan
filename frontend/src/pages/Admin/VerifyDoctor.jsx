@@ -32,8 +32,8 @@ function VerifyDoctor() {
             <button
               onClick={() => setFilter('pending')}
               className={`px-4 py-2 rounded-lg font-semibold transition ${filter === 'pending'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-white text-slate-700 border border-slate-300'
+                ? 'bg-purple-600 text-white'
+                : 'bg-white text-slate-700 border border-slate-300'
                 }`}
             >
               Pending
@@ -41,8 +41,8 @@ function VerifyDoctor() {
             <button
               onClick={() => setFilter('verified')}
               className={`px-4 py-2 rounded-lg font-semibold transition ${filter === 'verified'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-white text-slate-700 border border-slate-300'
+                ? 'bg-purple-600 text-white'
+                : 'bg-white text-slate-700 border border-slate-300'
                 }`}
             >
               Verified
@@ -50,8 +50,8 @@ function VerifyDoctor() {
             <button
               onClick={() => setFilter('rejected')}
               className={`px-4 py-2 rounded-lg font-semibold transition ${filter === 'rejected'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-white text-slate-700 border border-slate-300'
+                ? 'bg-purple-600 text-white'
+                : 'bg-white text-slate-700 border border-slate-300'
                 }`}
             >
               Rejected
@@ -93,10 +93,10 @@ function VerifyDoctor() {
                 <div className="mt-2">
                   <span
                     className={`px-2 py-1 text-xs font-semibold rounded-full ${doctor.status === 'verified'
-                        ? 'bg-green-100 text-green-800'
-                        : doctor.status === 'rejected'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-yellow-100 text-yellow-800'
+                      ? 'bg-green-100 text-green-800'
+                      : doctor.status === 'rejected'
+                        ? 'bg-red-100 text-red-800'
+                        : 'bg-yellow-100 text-yellow-800'
                       }`}
                   >
                     {doctor.status}
