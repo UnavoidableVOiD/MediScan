@@ -1,0 +1,12 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="100" fill="url(#logout_grad)"/>
+  <path d="M160 120H280V160H160V352H280V392H160C137.909 392 120 374.091 120 352V160C120 137.909 137.909 120 160 120Z" fill="white"/>
+  <path d="M320 256L240 196V236H180V276H240V316L320 256Z" fill="white"/>
+  <path d="M380 120V392" stroke="white" stroke-width="40" stroke-linecap="round"/>
+  <defs>
+    <linearGradient id="logout_grad" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ef4444"/>
+      <stop offset="1" stop-color="#b91c1c"/>
+    </linearGradient>
+  </defs>
+</svg>
