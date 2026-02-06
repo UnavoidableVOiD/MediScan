@@ -1,1 +1,34 @@
 @import "tailwindcss";
+
+@theme {
+  --color-medic-dark: #1F7A5B;
+  --color-medic-primary: #2A9D78;
+  --color-medic-light: #E6F4EF;
+  --color-medic-accent: #00A86B;
+  --color-neutral-background: #F9FAFB;
+  --color-neutral-soft: #F3F4F6;
+
+  --font-heading: "Inter", "Poppins", sans-serif;
+  --font-body: "Inter", sans-serif;
+}
+
+:root {
+  background-color: var(--color-neutral-background);
+  color: #1a1a1a;
+  font-family: var(--font-body);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+}
