@@ -16,9 +16,7 @@ from reports.serializers import ReportSerializer
 User = get_user_model()
 
 class DoctorListView(generics.ListAPIView):
-    """
-    API for patients to list all available doctors.
-    """
+    
     serializer_class = DoctorUserSerializer
     permission_classes = [permissions.IsAuthenticated]
     queryset = User.objects.filter(role='DOCTOR')
@@ -41,10 +39,9 @@ class LinkDoctorView(generics.CreateAPIView):
     permission_classes = [IsPatient]
 
     def perform_create(self, serializer):
-        # A patient can only have one doctor link (OneToOneField handles this)
-        # Check if already linked to avoid confusing error messages
+       
         if DoctorPatientLink.objects.filter(patient=self.request.user).exists():
-            # You might want to allow updating the doctor instead of just failing
+          
             DoctorPatientLink.objects.filter(patient=self.request.user).delete()
         
         serializer.save(patient=self.request.user)

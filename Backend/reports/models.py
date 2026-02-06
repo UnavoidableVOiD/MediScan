@@ -28,5 +28,17 @@ class ExtractedReportData(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+
+class ReportResult(models.Model):
+    report = models.OneToOneField(Report, on_delete=models.CASCADE, related_name='result')
+    summary = models.TextField(help_text="AI generated summary for the patient")
+    doctor_summary = models.TextField(help_text="AI generated summary for the doctor", null=True, blank=True)
+    key_findings = models.JSONField(help_text="List of key findings")
+    conditions = models.JSONField(help_text="List of detected conditions")
+    risk_level = models.CharField(max_length=20, choices=[('Low', 'Low'), ('Medium', 'Medium'), ('High', 'High')])
+    confidence_score = models.FloatField(default=0.0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
     def __str__(self):
-        return f"Data for Report {self.report.id}"
+        return f"Result for Report {self.report.id}"
+

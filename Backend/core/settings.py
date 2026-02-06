@@ -148,9 +148,13 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        'authentication.authentication.JWTCookieAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
@@ -170,6 +174,11 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://localhost:5173",
 ]
+CORS_ALLOW_CREDENTIALS = True
+
+ML_SERVICE_URL = os.getenv('ML_SERVICE_URL', 'http://127.0.0.1:8001')
+OCR_API_URL = f"{ML_SERVICE_URL}/extract_from_pdf"
+ANALYSIS_API_URL = os.getenv('ANALYSIS_API_URL', f"{ML_SERVICE_URL}/analyze_verified_data")
 
 # Google OAuth COOP fix
 SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'

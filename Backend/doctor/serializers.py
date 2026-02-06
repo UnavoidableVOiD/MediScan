@@ -6,17 +6,13 @@ from reports.serializers import ReportSerializer
 User = get_user_model()
 
 class PatientUserSerializer(serializers.ModelSerializer):
-    """
-    Simplified user serializer for doctor to see patient details.
-    """
+ 
     class Meta:
         model = User
         fields = ['id', 'email', 'first_name', 'last_name', 'phone_number']
 
 class DoctorUserSerializer(serializers.ModelSerializer):
-    """
-    Simplified user serializer for patients to see doctor details.
-    """
+    
     class Meta:
         model = User
         fields = ['id', 'email', 'first_name', 'last_name']

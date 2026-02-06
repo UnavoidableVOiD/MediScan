@@ -130,3 +130,12 @@ class LogoutSerializer(serializers.Serializer):
 
 class GoogleLoginSerializer(serializers.Serializer):
     token = serializers.CharField(help_text="Google ID Token received from the frontend.")
+
+
+class UserSerializer(serializers.ModelSerializer):
+    phone_number = PhoneNumberField()
+
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email', 'phone_number', 'role']
+        read_only_fields = ['email', 'role']

@@ -1,5 +1,10 @@
 from rest_framework import serializers
-from .models import Report, ExtractedReportData
+from .models import Report, ExtractedReportData, ReportResult
+
+class ReportResultSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReportResult
+        fields = ['id', 'summary', 'doctor_summary', 'key_findings', 'conditions', 'risk_level', 'confidence_score', 'created_at']
 
 class ExtractedDataSerializer(serializers.ModelSerializer):
     class Meta:
@@ -9,12 +14,14 @@ class ExtractedDataSerializer(serializers.ModelSerializer):
 
 class ReportSerializer(serializers.ModelSerializer):
     extracted_data = ExtractedDataSerializer(read_only=True)
+    result = ReportResultSerializer(read_only=True)
     doctor_comment = serializers.StringRelatedField(read_only=True)
     
     class Meta:
         model = Report
-        fields = ['id', 'file', 'uploaded_at', 'status', 'extracted_data', 'doctor_comment']
-        read_only_fields = ['id', 'uploaded_at', 'status', 'extracted_data', 'doctor_comment']
+        fields = ['id', 'file', 'uploaded_at', 'status', 'extracted_data', 'result', 'doctor_comment']
+        read_only_fields = ['id', 'uploaded_at', 'status', 'extracted_data', 'result', 'doctor_comment']
+
 
     def validate_file(self, value):
         valid_extensions = ['.pdf', '.jpg', '.jpeg', '.png']
