@@ -5,13 +5,18 @@ from phonenumber_field.modelfields import PhoneNumberField
 from django.utils.translation import gettext_lazy as _
 
 class CustomUserManager(BaseUserManager):
-    def create_user(self, email, password=None, role=None, **extra_fields):
+    def create_user(self, email, password=None, role=None, specialization=None, **extra_fields):
         if not email:
             raise ValueError(_('The Email must be set'))
         if not role:
             raise ValueError(_('The Role must be set'))
         email = self.normalize_email(email)
-        user = self.model(email=email, role=role.upper(), **extra_fields)
+        user = self.model(
+            email=email, 
+            role=role.upper(), 
+            specialization=specialization,
+            **extra_fields
+        )
         user.set_password(password)
         user.save(using=self._db)
         return user
@@ -35,15 +40,32 @@ class CustomUser(AbstractUser):
         ('PATIENT', 'Patient'),
     )
 
+    SPECIALIZATION_CHOICES = (
+        ('CARDIOLOGY', 'Cardiology'),
+        ('DERMATOLOGY', 'Dermatology'),
+        ('NEUROLOGY', 'Neurology'),
+        ('PEDIATRICS', 'Pediatrics'),
+        ('ORTHOPEDICS', 'Orthopedics'),
+        ('GENERAL_PRACTICE', 'General Practice'),
+        ('OTHER', 'Other'),
+    )
+
     username = None  # Disable username field
     email = models.EmailField(_('email address'), unique=True)
     
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     phone_number = PhoneNumberField(unique=True, null=True, blank=True)
-    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='DOCTOR')
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='PATIENT')
+    specialization = models.CharField(
+        max_length=50, 
+        choices=SPECIALIZATION_CHOICES, 
+        null=True, 
+        blank=True
+    )
     
     is_verified = models.BooleanField(default=False)
+    is_doctor_verified = models.BooleanField(default=False)
     failed_login_attempts = models.IntegerField(default=0)
     account_locked_until = models.DateTimeField(null=True, blank=True)
     

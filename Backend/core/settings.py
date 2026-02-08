@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'authentication',
     'reports.apps.ReportsConfig',
     'doctor',
+    'admin_panel',
     'rest_framework',
     'drf_spectacular',
     'corsheaders',
@@ -151,6 +152,7 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        'authentication.authentication.JWTCookieAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
@@ -170,6 +172,11 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://localhost:5173",
 ]
+CORS_ALLOW_CREDENTIALS = True
+
+ML_SERVICE_URL = os.getenv('ML_SERVICE_URL', 'http://localhost:8000')
+OCR_API_URL = f"{ML_SERVICE_URL}/extract_from_pdf"
+ANALYSIS_API_URL = os.getenv('ANALYSIS_API_URL', f"{ML_SERVICE_URL}/analyze_verified_data")
 
 # Google OAuth COOP fix
 SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'

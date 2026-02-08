@@ -1,332 +1,547 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    Upload, FileText, CheckCircle2, AlertCircle,
+    ArrowRight, Loader2, Search, Check, FileCheck,
+    ClipboardCheck, Activity, Download, ShieldCheck
+} from 'lucide-react';
 
-export default function CheckReports() {
+import { toast } from 'react-toastify';
+import { useDispatch, useSelector } from 'react-redux';
+import { uploadReport, processReport, correctReportData, resetStatus, fetchReports, clearCurrentReport } from '../store/slices/reportsSlice';
+
+import { useNavigate } from 'react-router-dom';
+
+const CheckReports = () => {
+    const dispatch = useDispatch();
     const navigate = useNavigate();
-    // const [searchParams] = useSearchParams();
-    const isDemo = true; // Always allow demo button to work locally for user understanding
+    const { uploading, processing, correcting, currentReport, error, success } = useSelector(state => state.reports);
 
 
-    const [step, setStep] = useState(1); // 1: Upload, 2: Scanning, 3: Verify
+    const [step, setStep] = useState(1);
     const [file, setFile] = useState(null);
-    const [extractedData, setExtractedData] = useState(null);
+    const [extractedData, setExtractedData] = useState({
+        patientName: '',
+        reportDate: '',
+        doctorName: '',
+        tests: []
+    });
+    const [analysisStatus, setAnalysisStatus] = useState('idle'); // idle, processing, completed
 
-    // Camera states
-    const [isCameraOpen, setIsCameraOpen] = useState(false);
-    const videoRef = useRef(null);
-    const canvasRef = useRef(null);
+    const fileInputRef = useRef(null);
 
-    // Mock extracted data
-    const mockScanResult = {
-        patientName: 'Guest User',
-        reportDate: '2025-02-24',
-        testType: 'CBC (Complete Blood Count)',
-        values: [
-            { test: 'Hemoglobin', value: '11.2', unit: 'g/dL', status: 'low' },
-            { test: 'Glucose', value: '105', unit: 'mg/dL', status: 'high' }
-        ]
-    };
-
-    const handleFileChange = (e) => {
-        if (e.target.files[0]) {
-            setFile(e.target.files[0]);
-        }
-    };
-
-    const startCamera = async () => {
-        setIsCameraOpen(true);
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
-            }
-        } catch (err) {
-            console.error("Error accessing camera:", err);
-            alert("Could not access camera. Please ensure you have granted permission.");
-            setIsCameraOpen(false);
-        }
-    };
-
-    const stopCamera = () => {
-        if (videoRef.current && videoRef.current.srcObject) {
-            const tracks = videoRef.current.srcObject.getTracks();
-            tracks.forEach(track => track.stop());
-            videoRef.current.srcObject = null;
-        }
-        setIsCameraOpen(false);
-    };
-
-    const captureImage = () => {
-        if (videoRef.current && canvasRef.current) {
-            const context = canvasRef.current.getContext('2d');
-            // Set canvas dimensions to match video
-            canvasRef.current.width = videoRef.current.videoWidth;
-            canvasRef.current.height = videoRef.current.videoHeight;
-
-            context.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
-
-            canvasRef.current.toBlob((blob) => {
-                const capturedFile = new File([blob], "captured_report.jpg", { type: "image/jpeg" });
-                setFile(capturedFile);
-                stopCamera();
-            }, 'image/jpeg');
-        }
-    };
-
-    const startScanning = () => {
-        if (!file && !isDemo) return;
-        setStep(2);
-        // Simulate OCR scanning delay
-        setTimeout(() => {
-            setExtractedData(mockScanResult);
-            setStep(3);
-        }, 2500);
-    };
-
-    // For Demo: Auto-upload simulation if user clicks "Try Demo Report"
-    const useDemoFile = () => {
-        setFile({ name: 'demo_lab_report.png', preview: '/demo_report.png' });
-        setStep(2);
-        setTimeout(() => {
-            setExtractedData(mockScanResult);
-            setStep(3);
-        }, 500);
-    };
+    // Unified State Logger
+    useEffect(() => {
+        console.log("[CheckReports] State Updated:", { step, currentReport_status: currentReport?.status, has_report: !!currentReport });
+    }, [step, currentReport]);
 
 
-
-    const handleAnalyze = () => {
-        // In a real app, we would send 'extractedData' to the backend/analysis page
-        // For now, we rely on the Analysis page reading MOCK_DATA or we pass state
-        navigate('/analysis', { state: { reportData: extractedData } });
-    };
+    // Sync Redux state with local state when report is uploaded/extracted
 
     useEffect(() => {
-        return () => {
-            stopCamera(); // Cleanup on unmount
+        if (currentReport) {
+            if (currentReport.status === 'FAILED') {
+                toast.error("Report processing failed. Please ensure the file is a valid PDF.");
+                setStep(1);
+                dispatch(clearCurrentReport());
+                return;
+            }
+
+            // If we just uploaded or resumed from dashboard, move to Step 2
+            if (step === 1 && currentReport.status === 'PENDING') {
+                setStep(2);
+            }
+
+            // If extraction is complete, move to Step 3 or 4
+            if (currentReport.status === 'PROCESSED' && currentReport.extracted_data) {
+                const data = currentReport.extracted_data.final_data || {};
+                setExtractedData({
+                    patientName: data.patient_name || '',
+                    reportDate: data.report_date || '',
+                    doctorName: data.doctor_name || '',
+                    tests: data.tests || []
+                });
+
+                if (step === 2) {
+                    setTimeout(() => setStep(3), 500);
+                } else if (step === 1) {
+                    // Coming from dashboard to view result
+                    setStep(3); // Go to verification first? Or maybe 4 if analysis exists
+                    // For now, let's go to Step 3 so they can see the data
+                }
+            }
+        }
+    }, [currentReport, step]);
+
+
+
+    useEffect(() => {
+        if (error) {
+            toast.error(typeof error === 'string' ? error : 'An error occurred');
+            dispatch(resetStatus());
+            if (step === 2) setStep(1); // Go back if upload/extraction fails
+        }
+    }, [error, dispatch, step]);
+
+
+
+    // --- Step 1: File Upload Logic ---
+    const handleFileChange = (e) => {
+        const selectedFile = e.target.files[0];
+        if (selectedFile) {
+            validateAndSetFile(selectedFile);
+        }
+    };
+
+    const validateAndSetFile = (file) => {
+        const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+        const maxSize = 5 * 1024 * 1024; // 5MB
+
+        if (!allowedTypes.includes(file.type)) {
+            toast.error("Only PNG files are supported.");
+            return;
+        }
+
+        if (file.size > maxSize) {
+            toast.error("File size must be less than 5MB.");
+            return;
+        }
+
+        setFile(file);
+    };
+
+    const handleUpload = async () => {
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        dispatch(uploadReport(formData));
+    };
+
+    const handleReset = () => {
+        dispatch(clearCurrentReport());
+        setFile(null);
+        setStep(1);
+    };
+
+    const handleProcess = () => {
+        console.log("[CheckReports] handleProcess triggered");
+        console.log("[CheckReports] Current state before dispatch:", { currentReport, step });
+
+        if (currentReport && currentReport.id) {
+            console.log("[CheckReports] Dispatching processReport for ID:", currentReport.id);
+            dispatch(processReport(currentReport.id));
+        } else {
+            console.error("[CheckReports] ABORT: Cannot process. currentReport:", currentReport);
+            toast.error("Process failed: No active report found. Please try uploading again.");
+        }
+    };
+
+
+
+
+
+
+    // --- Step 2: Verification Logic ---
+    const handleVerify = async (e) => {
+        e.preventDefault();
+
+        const payload = {
+            id: currentReport.id,
+            final_data: {
+                patient_name: extractedData.patientName,
+                report_date: extractedData.reportDate,
+                doctor_name: extractedData.doctorName,
+                tests: extractedData.tests
+            }
         };
-    }, []);
 
-    const handleInputChange = (field, value) => {
-        setExtractedData(prev => ({
-            ...prev,
-            [field]: value
-        }));
+        setAnalysisStatus('processing');
+        const resultAction = await dispatch(correctReportData(payload));
+
+        if (correctReportData.fulfilled.match(resultAction)) {
+            setStep(4);
+            setAnalysisStatus('completed');
+            toast.success("AI Analysis Complete!");
+            dispatch(fetchReports()); // Refresh list in background
+        } else {
+            setAnalysisStatus('idle');
+            // Error is handled by the useEffect watching 'error'
+        }
     };
 
-    const handleValueChange = (index, field, value) => {
-        setExtractedData(prev => {
-            const newValues = [...prev.values];
-            newValues[index] = { ...newValues[index], [field]: value };
-            return { ...prev, values: newValues };
-        });
+
+
+    const handleTestChange = (index, field, value) => {
+        const newTests = [...extractedData.tests];
+        newTests[index] = { ...newTests[index], [field]: value };
+        setExtractedData({ ...extractedData, tests: newTests });
     };
+
+    // --- Helper Components ---
+    const StepIndicator = () => {
+        const steps = [
+            { id: 1, label: 'Upload' },
+            { id: 2, label: 'Extract' },
+            { id: 3, label: 'Confirm' },
+            { id: 4, label: 'Analyze' }
+        ];
+
+        return (
+            <div className="flex items-center justify-center mb-14">
+                {steps.map((s, idx) => (
+                    <div key={s.id} className="flex items-center">
+                        <div className="flex flex-col items-center relative">
+                            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold transition-all z-10 ${step === s.id ? 'bg-medic-dark text-white ring-4 ring-medic-dark/10 shadow-lg' :
+                                step > s.id ? 'bg-medic-accent text-medic-dark' : 'bg-neutral-soft text-gray-400'
+                                }`}>
+                                {step > s.id ? <Check className="w-5 h-5" /> : <span className="text-sm sm:text-base">{s.id}</span>}
+                            </div>
+                            <span className={`absolute -bottom-7 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ${step === s.id ? 'text-medic-dark' : 'text-gray-400'}`}>
+                                {s.label}
+                            </span>
+                        </div>
+                        {idx < steps.length - 1 && (
+                            <div className={`w-6 sm:w-16 h-1 mx-1 sm:mx-2 rounded-full transition-all ${step > s.id ? 'bg-medic-accent' : 'bg-neutral-soft'
+                                }`} />
+                        )}
+                    </div>
+                ))}
+            </div>
+        );
+    };
+
+
 
     return (
-        <div className="max-w-4xl mx-auto px-4 py-12 fade-in">
-            <h1 className="text-3xl font-bold text-slate-900 text-center mb-2">
-                {step === 1 ? 'Upload Your Report' : step === 2 ? 'Scanning Document...' : 'Verify Extracted Data'}
-            </h1>
-            <p className="text-center text-slate-500 mb-8">
-                {step === 1
-                    ? 'Upload a clear photo or PDF of your lab report.'
-                    : step === 2
-                        ? 'Our AI is extracting values from your report.'
-                        : 'Please review the data below before analysis.'}
-            </p>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+            <header className="text-center mb-10 sm:mb-12">
+                <h1 className="text-3xl sm:text-4xl font-bold text-medic-dark mb-3 tracking-tight">Check Medical Reports</h1>
+                <p className="text-gray-500 text-base sm:text-lg max-w-lg mx-auto">Upload and analyze your medical reports securely with AI.</p>
+            </header>
 
-            {/* Step 1: Upload */}
-            {step === 1 && (
-                <div className="bg-white border-2 border-dashed border-slate-300 rounded-2xl p-10 text-center hover:border-green-500 transition cursor-pointer">
+            <div className="overflow-x-clip pb-8 sm:pb-0">
+                <StepIndicator />
+            </div>
 
-                    {!isCameraOpen ? (
-                        <>
-                            <div className="mb-4 text-green-100 bg-green-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto">
-                                <i className="fa-solid fa-cloud-arrow-up text-3xl text-white"></i>
+            <AnimatePresence mode="wait">
+                {/* Step 1: Upload */}
+                {step === 1 && (
+                    <motion.div
+                        key="step1"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="bg-white rounded-3xl shadow-xl shadow-medic-dark/5 p-8 border border-medic-light/20"
+                    >
+                        <div
+                            className={`border-3 border-dashed rounded-3xl p-12 text-center transition-all ${file ? 'border-medic-dark bg-medic-light/5' : 'border-neutral-soft hover:border-medic-light bg-neutral-soft/50'
+                                }`}
+                            onDragOver={(e) => { e.preventDefault(); }}
+                            onDrop={(e) => {
+                                e.preventDefault();
+                                const droppedFile = e.dataTransfer.files[0];
+                                if (droppedFile) validateAndSetFile(droppedFile);
+                            }}
+                        >
+                            <div className="bg-medic-dark/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <Upload className="w-10 h-10 text-medic-dark" />
                             </div>
-                            <h3 className="text-xl font-bold text-slate-800 mb-2">Drag & drop your file here</h3>
-                            <p className="text-slate-400 mb-6">Supported formats: JPG, PNG, PDF</p>
+                            <h3 className="text-xl font-bold text-gray-900 mb-2">
+                                {file ? file.name : "Drag & drop your report here"}
+                            </h3>
+                            <p className="text-gray-500 mb-8 max-w-sm mx-auto">
+                                Supported formats: PDF: Maximum file size 5MB.
+                            </p>
 
                             <input
                                 type="file"
-                                id="fileInput"
-                                className="hidden"
+                                ref={fileInputRef}
                                 onChange={handleFileChange}
-                                accept=".jpg,.jpeg,.png,.pdf"
+                                className="hidden"
+                                accept=".pdf"
                             />
 
-                            {!file ? (
-                                <div className="space-y-3">
-                                    <div className="flex justify-center gap-3">
-                                        <button
-                                            onClick={() => document.getElementById('fileInput').click()}
-                                            className="bg-green-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 transition shadow-lg"
-                                        >
-                                            <i className="fa-solid fa-file-arrow-up mr-2"></i> Select File
-                                        </button>
-                                        <button
-                                            onClick={startCamera}
-                                            className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg lg:hidden"
-                                        >
-                                            <i className="fa-solid fa-camera mr-2"></i> Take Photo
-                                        </button>
-                                    </div>
+                            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                                <button
+                                    onClick={() => fileInputRef.current.click()}
+                                    className="px-8 py-3 bg-white border-2 border-medic-dark text-medic-dark rounded-xl font-bold hover:bg-medic-light/10 transition-all active:scale-95"
+                                >
+                                    Choose File
+                                </button>
+                                {file && (
+                                    <button
+                                        onClick={handleUpload}
+                                        disabled={uploading}
+                                        className="px-8 py-3 bg-medic-dark text-white rounded-xl font-bold shadow-lg shadow-medic-dark/20 hover:bg-medic-primary transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
+                                    >
+                                        {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verify and Upload"}
+                                        {!uploading && <ArrowRight className="w-5 h-5" />}
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
 
-                                    <div className="mt-6 border-t border-slate-100 pt-4">
-                                        <p className="text-xs text-slate-400 mb-2">New here? See how it works:</p>
-                                        <button
-                                            onClick={useDemoFile}
-                                            className="text-sm text-green-600 font-bold hover:underline bg-green-50 px-4 py-2 rounded-lg"
-                                        >
-                                            <i className="fa-solid fa-flask mr-2"></i> Try Demo Report
-                                        </button>
+                {/* Step 2: Extraction Processing & Manual Trigger */}
+                {step === 2 && (
+                    <motion.div
+                        key="step2"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 1.05 }}
+                        className="bg-white rounded-3xl shadow-xl shadow-medic-dark/5 p-12 border border-medic-light/20 text-center"
+                    >
+                        <div className="space-y-8 py-10">
+                            {processing ? (
+                                <>
+                                    <div className="relative w-32 h-32 mx-auto">
+                                        <div className="absolute inset-0 border-4 border-medic-light/10 rounded-full" />
+                                        <div className="absolute inset-0 border-4 border-medic-dark rounded-full animate-spin border-t-transparent" />
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <Search className="w-12 h-12 text-medic-dark animate-pulse" />
+                                        </div>
                                     </div>
-                                </div>
-
+                                    <div className="space-y-2">
+                                        <h2 className="text-2xl font-bold text-gray-900">Extracting Medical Data</h2>
+                                        <p className="text-gray-500 max-w-sm mx-auto">
+                                            Our OCR engine is scanning your document for test names, values, and units.
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center justify-center gap-2 text-medic-dark font-medium animate-bounce">
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        <span>Processing...</span>
+                                    </div>
+                                </>
                             ) : (
-                                <div className="space-y-4">
-                                    <div className="bg-green-50 text-green-700 p-4 rounded-xl inline-block font-medium">
-                                        <i className="fa-solid fa-file-lines mr-2"></i> {file.name}
+                                <>
+                                    <div className="bg-medic-light/20 w-32 h-32 rounded-full flex items-center justify-center mx-auto mb-6">
+                                        <FileText className="w-16 h-16 text-medic-dark" />
                                     </div>
-                                    <br />
-                                    <div className="flex justify-center gap-3">
+                                    <div className="space-y-2">
+                                        <h2 className="text-2xl font-bold text-gray-900">File Uploaded Successfully</h2>
+                                        <p className="text-gray-500 max-w-sm mx-auto">
+                                            The report <b>{currentReport?.file.split('/').pop()}</b> is ready for data extraction. Click the button below to start the OCR process.
+                                        </p>
+                                    </div>
+                                    <div className="pt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
                                         <button
-                                            onClick={() => setFile(null)}
-                                            className="bg-slate-200 text-slate-700 px-6 py-3 rounded-xl font-bold hover:bg-slate-300 transition"
+                                            onClick={handleReset}
+                                            className="px-8 py-3 bg-white border-2 border-medic-dark text-medic-dark rounded-xl font-bold hover:bg-medic-light/10 transition-all active:scale-95"
                                         >
-                                            Change File
+                                            Discard and New Upload
                                         </button>
                                         <button
-                                            onClick={startScanning}
-                                            className="bg-green-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-green-700 transition shadow-lg"
+                                            onClick={handleProcess}
+                                            className="px-10 py-4 bg-medic-dark text-white rounded-2xl font-bold shadow-lg shadow-medic-dark/20 hover:bg-medic-primary transition-all active:scale-95 flex items-center gap-2"
                                         >
-                                            Scan & Analyze <i className="fa-solid fa-arrow-right ml-2"></i>
+                                            <Activity className="w-5 h-5" />
+                                            Confirm and Extract Data
                                         </button>
                                     </div>
-                                </div>
+
+                                </>
                             )}
-                        </>
-                    ) : (
-                        <div className="relative max-w-lg mx-auto">
-                            <video
-                                ref={videoRef}
-                                autoPlay
-                                playsInline
-                                className="w-full rounded-xl border-2 border-slate-200 shadow-lg"
-                                onLoadedMetadata={() => videoRef.current.play()}
-                            />
-                            <canvas ref={canvasRef} className="hidden" />
-                            <div className="flex justify-center gap-3 mt-4">
-                                <button
-                                    onClick={stopCamera}
-                                    className="bg-slate-500 text-white px-6 py-2 rounded-lg font-bold hover:bg-slate-600 transition"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={captureImage}
-                                    className="bg-green-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-green-700 transition shadow-lg"
-                                >
-                                    <i className="fa-solid fa-camera mr-2"></i> Capture
-                                </button>
-                            </div>
                         </div>
-                    )}
-                </div>
-            )
-            }
+                    </motion.div>
+                )}
 
-            {/* Step 2: Scanning Animation */}
-            {
-                step === 2 && (
-                    <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-slate-100">
-                        <div className="loader mx-auto mb-6 !w-16 !h-16 !border-4 !border-t-green-600"></div>
-                        <p className="text-lg font-medium text-slate-700">Analyzing medical terms...</p>
-                        <p className="text-sm text-slate-400 mt-2">Extracting vital markers...</p>
-                    </div>
-                )
-            }
-
-            {/* Step 3: Verification */}
-            {
-                step === 3 && extractedData && (
-                    <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
-                        <div className="bg-green-600 p-4 text-white flex justify-between items-center">
-                            <h3 className="font-bold flex items-center gap-2">
-                                <i className="fa-solid fa-check-circle"></i> Verification
-                            </h3>
-                            <span className="text-xs bg-green-500 px-2 py-1 rounded">Wait! Is this correct?</span>
-                        </div>
-
-                        <div className="p-6 space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div>
-                                    <label className="block text-xs text-slate-500 uppercase font-bold mb-1">Patient Name</label>
-                                    <input
-                                        value={extractedData.patientName}
-                                        onChange={(e) => handleInputChange('patientName', e.target.value)}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-medium focus:outline-none focus:border-green-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs text-slate-500 uppercase font-bold mb-1">Report Date</label>
-                                    <input
-                                        value={extractedData.reportDate}
-                                        onChange={(e) => handleInputChange('reportDate', e.target.value)}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-medium focus:outline-none focus:border-green-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs text-slate-500 uppercase font-bold mb-1">Type</label>
-                                    <input
-                                        value={extractedData.testType}
-                                        onChange={(e) => handleInputChange('testType', e.target.value)}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-medium focus:outline-none focus:border-green-500"
-                                    />
-                                </div>
+                {/* Step 3: Verification */}
+                {step === 3 && (
+                    <motion.div
+                        key="step3"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="space-y-6"
+                    >
+                        <div className="bg-white rounded-3xl shadow-xl shadow-medic-dark/5 p-8 border border-medic-light/20">
+                            <div className="flex items-center gap-3 mb-8 text-medic-dark">
+                                <FileCheck className="w-8 h-8" />
+                                <h2 className="text-2xl font-bold">Verify Extracted Data</h2>
                             </div>
 
-                            <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                                <h4 className="font-bold text-slate-700 mb-3">Extracted Values</h4>
-                                {extractedData.values.map((val, idx) => (
-                                    <div key={idx} className="flex items-center gap-3 mb-2 last:mb-0">
+                            <form onSubmit={handleVerify} className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Patient Name</label>
                                         <input
-                                            value={val.test}
-                                            onChange={(e) => handleValueChange(idx, 'test', e.target.value)}
-                                            className="flex-1 font-medium text-slate-800 bg-transparent border-b border-transparent focus:border-green-500 focus:outline-none"
-                                        />
-                                        <input
-                                            value={val.value}
-                                            onChange={(e) => handleValueChange(idx, 'value', e.target.value)}
-                                            className="w-20 font-bold text-slate-900 bg-white px-2 py-1 rounded border border-slate-200 focus:border-green-500 focus:outline-none text-center"
-                                        />
-                                        <input
-                                            value={val.unit}
-                                            onChange={(e) => handleValueChange(idx, 'unit', e.target.value)}
-                                            className="w-16 text-slate-500 text-sm bg-transparent border-b border-transparent focus:border-green-500 focus:outline-none"
+                                            type="text"
+                                            value={extractedData.patientName}
+                                            onChange={(e) => setExtractedData({ ...extractedData, patientName: e.target.value })}
+                                            className="w-full px-4 py-3 bg-neutral-soft rounded-xl border-transparent focus:border-medic-dark focus:bg-white transition-all outline-none"
                                         />
                                     </div>
-                                ))}
-                            </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Report Date</label>
+                                        <input
+                                            type="date"
+                                            value={extractedData.reportDate}
+                                            onChange={(e) => setExtractedData({ ...extractedData, reportDate: e.target.value })}
+                                            className="w-full px-4 py-3 bg-neutral-soft rounded-xl border-transparent focus:border-medic-dark focus:bg-white transition-all outline-none"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5 md:col-span-2">
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Referring Physician / Lab</label>
+                                        <input
+                                            type="text"
+                                            value={extractedData.doctorName}
+                                            onChange={(e) => setExtractedData({ ...extractedData, doctorName: e.target.value })}
+                                            className="w-full px-4 py-3 bg-neutral-soft rounded-xl border-transparent focus:border-medic-dark focus:bg-white transition-all outline-none"
+                                        />
+                                    </div>
+                                </div>
 
-                            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                                <div className="mt-8">
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 block">Key Findings Found</label>
+                                    <div className="space-y-3">
+                                        {extractedData.tests.map((test, i) => (
+                                            <div key={i} className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-neutral-soft rounded-2xl border border-transparent hover:border-medic-light/30 transition-all group">
+                                                <div className="flex-grow w-full">
+                                                    <input
+                                                        type="text"
+                                                        value={test.name}
+                                                        onChange={(e) => handleTestChange(i, 'name', e.target.value)}
+                                                        className="w-full bg-transparent font-bold text-gray-900 border-b border-transparent focus:border-medic-dark outline-none"
+                                                    />
+                                                </div>
+                                                <div className="flex items-center gap-2 w-full sm:w-auto">
+                                                    <input
+                                                        type="text"
+                                                        value={test.value}
+                                                        onChange={(e) => handleTestChange(i, 'value', e.target.value)}
+                                                        className="w-20 bg-white px-2 py-1 rounded text-sm text-center border border-gray-200 focus:border-medic-dark outline-none"
+                                                    />
+                                                    <span className="text-sm text-gray-500 whitespace-nowrap">{test.unit}</span>
+                                                    <span className={`ml-auto sm:ml-2 px-3 py-1 rounded-full text-xs font-bold ${test.status === 'Normal' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                                                        }`}>
+                                                        {test.status}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row items-center justify-end gap-4 pt-6 border-t border-gray-100">
+                                    <button
+                                        type="button"
+                                        onClick={handleReset}
+                                        className="px-8 py-3 bg-white border-2 border-medic-dark text-medic-dark rounded-xl font-bold hover:bg-medic-light/10 transition-all active:scale-95"
+                                    >
+                                        Discard
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={correcting}
+                                        className="px-10 py-4 bg-medic-dark text-white rounded-xl font-bold shadow-lg shadow-medic-dark/20 hover:bg-medic-primary transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
+                                    >
+                                        {correcting ? <Loader2 className="w-5 h-5 animate-spin" /> : <ShieldCheck className="w-5 h-5" />}
+                                        Confirm & Start AI Analysis
+                                        {!correcting && <ArrowRight className="w-5 h-5" />}
+                                    </button>
+                                </div>
+
+                            </form>
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* Step 4: Analysis Progress & Result */}
+                {step === 4 && (
+                    <motion.div
+                        key="step4"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="bg-white rounded-3xl shadow-xl shadow-medic-dark/5 p-12 border border-medic-light/20 text-center"
+                    >
+                        {analysisStatus === 'processing' ? (
+                            <div className="space-y-8 py-10">
+                                <div className="relative w-32 h-32 mx-auto">
+                                    <div className="absolute inset-0 border-4 border-medic-light/30 rounded-full" />
+                                    <div className="absolute inset-0 border-4 border-medic-dark rounded-full animate-[spin_3s_linear_infinite] border-t-transparent" />
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <Activity className="w-12 h-12 text-medic-dark animate-pulse" />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <h2 className="text-2xl font-bold text-gray-900">Analyzing Your Report...</h2>
+                                    <p className="text-gray-500 max-w-sm mx-auto">
+                                        Please wait while our AI engine analyzes the results and prepares your health summary.
+                                    </p>
+                                </div>
+
+                                <div className="max-w-xs mx-auto space-y-4">
+                                    {[
+                                        { label: 'Uploading secure data', done: true },
+                                        { label: 'Extracting key medical indicators', done: true },
+                                        { label: 'Running AI diagnostic analysis', done: false },
+                                        { label: 'Generating easy-to-read summary', done: false },
+                                    ].map((s, i) => (
+                                        <div key={i} className="flex items-center gap-3 text-left">
+                                            {s.done ? (
+                                                <CheckCircle2 className="w-5 h-5 text-medic-accent flex-shrink-0" />
+                                            ) : (
+                                                <div className="w-5 h-5 rounded-full border-2 border-gray-200 border-t-medic-dark animate-spin flex-shrink-0" />
+                                            )}
+                                            <span className={`text-sm font-medium ${s.done ? 'text-gray-900' : 'text-gray-400'}`}>{s.label}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-8 py-6">
+                                <div className="bg-medic-accent text-medic-dark w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 scale-110">
+                                    <ClipboardCheck className="w-12 h-12" />
+                                </div>
+                                <div className="space-y-2">
+                                    <h2 className="text-3xl font-bold text-gray-900">Analysis Completed</h2>
+                                    <p className="text-gray-500">
+                                        We've successfully analyzed your report. Your insights are ready.
+                                    </p>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg mx-auto pt-6">
+                                    <button
+                                        onClick={() => navigate(`/reports/${currentReport.id}/result/`)}
+                                        className="flex items-center justify-center gap-2 px-8 py-4 bg-medic-dark text-white rounded-2xl font-bold shadow-lg shadow-medic-dark/20 hover:bg-medic-primary transition-all active:scale-95"
+                                    >
+                                        View Detailed Result
+                                        <ArrowRight className="w-5 h-5" />
+                                    </button>
+                                    <button
+                                        onClick={() => navigate('/dashboard')}
+                                        className="flex items-center justify-center gap-2 px-8 py-4 bg-white border-2 border-medic-dark text-medic-dark rounded-2xl font-bold hover:bg-medic-light/10 transition-all active:scale-95"
+                                    >
+                                        Back to Dashboard
+                                    </button>
+                                </div>
+
+
+
                                 <button
                                     onClick={() => setStep(1)}
-                                    className="px-6 py-2 text-slate-500 font-bold hover:text-slate-800"
+                                    className="text-sm font-bold text-medic-dark hover:underline flex items-center gap-2 mx-auto pt-8"
                                 >
-                                    Re-upload
-                                </button>
-                                <button
-                                    onClick={handleAnalyze}
-                                    className="bg-green-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-green-700 transition shadow-lg flex items-center gap-2"
-                                >
-                                    <i className="fa-solid fa-wand-magic-sparkles"></i> Generate Analysis
+                                    Upload another report
                                 </button>
                             </div>
-                        </div>
-                    </div>
-                )
-            }
-        </div >
+                        )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <div className="mt-12 p-6 bg-medic-light/10 rounded-2xl border border-medic-light/20 flex items-start gap-4">
+                <AlertCircle className="w-6 h-6 text-medic-dark flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-medic-dark/80 leading-relaxed">
+                    <p className="font-bold mb-1 uppercase tracking-wider text-[10px]">Medical Disclaimer</p>
+                    Mediscan AI provides automated report explanations for informational purposes only. It is not a clinical diagnosis. Please consult with a qualified healthcare professional before making any medical decisions.
+                </div>
+            </div>
+        </div>
     );
-}
+};
+
+export default CheckReports;

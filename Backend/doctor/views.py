@@ -2,12 +2,13 @@ from rest_framework import viewsets, generics, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
-from .models import DoctorPatientLink, DoctorComment
+from .models import DoctorPatientLink, DoctorComment, DoctorLicense
 from .serializers import (
-    DoctorPatientLinkSerializer, 
+    DoctorPatientLinkSerializer,
     DoctorCommentSerializer, 
     DoctorUserSerializer,
-    PatientUserSerializer
+    PatientUserSerializer,
+    DoctorLicenseSerializer
 )
 from .permissions import IsDoctor, IsPatient
 from reports.models import Report
@@ -16,9 +17,7 @@ from reports.serializers import ReportSerializer
 User = get_user_model()
 
 class DoctorListView(generics.ListAPIView):
-    """
-    API for patients to list all available doctors.
-    """
+    
     serializer_class = DoctorUserSerializer
     permission_classes = [permissions.IsAuthenticated]
     queryset = User.objects.filter(role='DOCTOR')
@@ -41,10 +40,9 @@ class LinkDoctorView(generics.CreateAPIView):
     permission_classes = [IsPatient]
 
     def perform_create(self, serializer):
-        # A patient can only have one doctor link (OneToOneField handles this)
-        # Check if already linked to avoid confusing error messages
+       
         if DoctorPatientLink.objects.filter(patient=self.request.user).exists():
-            # You might want to allow updating the doctor instead of just failing
+          
             DoctorPatientLink.objects.filter(patient=self.request.user).delete()
         
         serializer.save(patient=self.request.user)
@@ -82,3 +80,20 @@ class DoctorCommentViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(doctor=self.request.user)
+
+class DoctorLicenseView(generics.RetrieveUpdateAPIView):
+    """
+    API for doctors to upload and view their license status.
+    Uses RetrieveUpdateAPIView to allow both viewing and submitting/updating.
+    """
+    serializer_class = DoctorLicenseSerializer
+    permission_classes = [IsDoctor]
+
+    def get_object(self):
+        # Get or create placeholder for the current doctor
+        obj, created = DoctorLicense.objects.get_or_create(doctor=self.request.user)
+        return obj
+
+    def perform_update(self, serializer):
+        # Reset status to PENDING on update/re-submission
+        serializer.save(status='PENDING')

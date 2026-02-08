@@ -3,9 +3,19 @@ from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenRefreshView
+from rest_framework_simplejwt.settings import api_settings as jwt_settings
 import logging
 
-from .serializers import RegisterSerializer, VerifyOTPSerializer, LoginSerializer, LogoutSerializer, GoogleLoginSerializer
+
+from .serializers import (
+    RegisterSerializer, 
+    VerifyOTPSerializer, 
+    LoginSerializer, 
+    LogoutSerializer, 
+    GoogleLoginSerializer,
+    UserSerializer
+)
 from .otp import OTPHandler
 import os
 from django.conf import settings
@@ -63,7 +73,8 @@ class VerifyOTPView(views.APIView):
                         last_name=reg_data['last_name'],
                         phone_number=reg_data['phone_number'],
                         password=reg_data['password'],
-                        role=reg_data['role']
+                        role=reg_data['role'],
+                        specialization=reg_data.get('specialization')
                     )
                     user.is_verified = True
                     user.save()
@@ -84,11 +95,9 @@ class VerifyOTPView(views.APIView):
 
                     refresh = RefreshToken.for_user(user)
                     
-                    return Response({
+                    response = Response({
                         "success": True,
                         "message": "Login completed.",
-                        "refresh": str(refresh),
-                        "access": str(refresh.access_token),
                         "user": {
                             "email": user.email,
                             "first_name": user.first_name,
@@ -96,6 +105,25 @@ class VerifyOTPView(views.APIView):
                             "role": user.role
                         }
                     }, status=status.HTTP_200_OK)
+
+                    response.set_cookie(
+                        key='access',
+                        value=str(refresh.access_token),
+                        httponly=True,
+                        secure=settings.DEBUG is False,
+                        samesite='Lax',
+                        path='/'
+                    )
+                    response.set_cookie(
+                        key='refresh',
+                        value=str(refresh),
+                        httponly=True,
+                        secure=settings.DEBUG is False,
+                        samesite='Lax',
+                        path='/'
+                    )
+
+                    return response
                 except User.DoesNotExist:
                      return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
             
@@ -125,11 +153,11 @@ class LogoutView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        serializer = LogoutSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"success": True, "message": "Logged out."}, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        response = Response({"success": True, "message": "Logged out."}, status=status.HTTP_200_OK)
+        response.delete_cookie('access', path='/')
+        response.delete_cookie('refresh', path='/')
+
+        return response
 
 
 class GoogleLoginView(views.APIView):
@@ -145,31 +173,59 @@ class GoogleLoginView(views.APIView):
         token = serializer.validated_data.get('token')
 
         try:
-            idinfo = id_token.verify_oauth2_token(token, requests.Request(), settings.GOOGLE_CLIENT_ID)
-            email = idinfo['email']
-            first_name = idinfo.get('given_name', '')
-            last_name = idinfo.get('family_name', '')
+            # Check if it's a JWT (ID Token) or Access Token
+            if token.count('.') == 2:
+                # Likely an ID Token (JWT)
+                idinfo = id_token.verify_oauth2_token(token, requests.Request(), settings.GOOGLE_CLIENT_ID)
+                email = idinfo['email']
+                first_name = idinfo.get('given_name', '')
+                last_name = idinfo.get('family_name', '')
+            else:
+                # Likely an Access Token (OAuth2)
+                # Verify access token via Google userinfo endpoint
+                import requests as http_requests
+                userinfo_url = "https://www.googleapis.com/oauth2/v3/userinfo"
+                response = http_requests.get(userinfo_url, params={'access_token': token})
+                
+                if not response.ok:
+                    return Response({"error": "Failed to verify Access Token with Google"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                idinfo = response.json()
+                email = idinfo.get('email')
+                first_name = idinfo.get('given_name', '')
+                last_name = idinfo.get('family_name', '')
 
-            user, created = User.objects.get_or_create(
-                email=email,
-                defaults={
-                    'first_name': first_name,
-                    'last_name': last_name,
-                    'role': 'PATIENT',
-                    'is_verified': True
-                }
-            )
+                if not email:
+                    return Response({"error": "Email not provided by Google"}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                user = User.objects.get(email=email)
+                # If user exists, check role
+                if user.role == 'DOCTOR':
+                    return Response({
+                        "error": "Doctors cannot use Google Login. Please use professional email and OTP."
+                    }, status=status.HTTP_403_FORBIDDEN)
+            except User.DoesNotExist:
+                # If user doesn't exist, create as PATIENT
+                user = User.objects.create_user(
+                    email=email,
+                    first_name=first_name,
+                    last_name=last_name,
+                    role='PATIENT',
+                    is_verified=True
+                )
+                created = True
+            else:
+                created = False
 
             if not created:
                 user.is_verified = True
                 user.save()
 
             refresh = RefreshToken.for_user(user)
-            return Response({
+            response = Response({
                 "success": True,
                 "message": "Login completed." if not created else "Registration and Login completed.",
-                "refresh": str(refresh),
-                "access": str(refresh.access_token),
                 "user": {
                     "email": user.email,
                     "first_name": user.first_name,
@@ -177,6 +233,25 @@ class GoogleLoginView(views.APIView):
                     "role": user.role
                 }
             }, status=status.HTTP_200_OK)
+
+            response.set_cookie(
+                key='access',
+                value=str(refresh.access_token),
+                httponly=True,
+                secure=settings.DEBUG is False,
+                samesite='Lax',
+                path='/'
+            )
+            response.set_cookie(
+                key='refresh',
+                value=str(refresh),
+                httponly=True,
+                secure=settings.DEBUG is False,
+                samesite='Lax',
+                path='/'
+            )
+
+            return response
 
         except ValueError as e:
             logger.error(f"Google Token Validation failed: {str(e)}")
@@ -187,34 +262,44 @@ class GoogleLoginView(views.APIView):
 
 class ProfileView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UserSerializer
 
     def get(self, request):
-        user = request.user
-        return Response({
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-            "email": user.email,
-            "phone_number": user.phone_number,
-            "role": user.role
-        })
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data)
 
     def patch(self, request):
-        user = request.user
-        data = request.data
+        serializer = UserSerializer(request.user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "success": True,
+                "message": "Profile updated successfully.",
+                "user": serializer.data
+            })
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-        user.first_name = data.get('first_name', user.first_name)
-        user.last_name = data.get('last_name', user.last_name)
-        user.phone_number = data.get('phone_number', user.phone_number)
+class CookieTokenRefreshView(TokenRefreshView):
+    def post(self, request, *args, **kwargs):
+        refresh_token = request.COOKIES.get('refresh')
+        if refresh_token:
+            request.data['refresh'] = refresh_token
         
-        user.save()
+        response = super().post(request, *args, **kwargs)
         
-        return Response({
-            "message": "Profile updated successfully.",
-            "user": {
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-                "email": user.email,
-                "phone_number": user.phone_number,
-                "role": user.role
-            }
-        })
+        if response.status_code == 200:
+            access_token = response.data.get('access')
+            if access_token:
+                response.set_cookie(
+                    key='access',
+                    value=access_token,
+                    httponly=True,
+                    secure=settings.DEBUG is False,
+                    samesite='Lax',
+                    path='/'
+                )
+                # Remove from body to keep it purely in cookies if desired, 
+                # but often it's fine to leave it for frontend to confirm success.
+                # del response.data['access'] 
+        
+        return response
