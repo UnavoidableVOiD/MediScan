@@ -12,7 +12,9 @@ ML/temp_*.pdf
 .vscode/
 .idea/
 
-#frontend dependencies
+# frontend dependencies
+Frontend/node_modules/
+Frontend/dist/
 frontend/node_modules/
 node_modules/
 
@@ -24,3 +26,7 @@ node_modules/
 
 /ML/benchmark_results.csv
 ML/reports/
+
+/ML/src/chat_payload.json
+/ML/src/payload.json
+/ML/test_pipeline.txt

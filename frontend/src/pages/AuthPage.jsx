@@ -100,14 +100,14 @@ const AuthPage = () => {
                         </p>
                     </div>
 
-                    <div className="relative z-10 pt-8 sm:pt-12 hidden sm:block">
+                    {/* <div className="relative z-10 pt-8 sm:pt-12 hidden sm:block">
                         <div className="flex items-center gap-4 mb-4">
                             <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
                                 <ShieldCheck className="w-6 h-6 text-medic-accent" />
                             </div>
                             <span className="text-sm font-medium opacity-80">HIPAA Compliant Encryption</span>
                         </div>
-                    </div>
+                    </div> */}
 
                     {/* Abstract Wave Graphic */}
                     <div className="absolute bottom-0 left-0 w-full h-1/2 opacity-10 pointer-events-none hidden md:block">

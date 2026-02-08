@@ -53,7 +53,7 @@ const ChatbotAssistant = () => {
                         <div className="bg-medic-dark p-6 text-white flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                                    <HeartPulse className="w-6 h-6 text-medic-accent" />
+                                    <HeartPulcd B se className="w-6 h-6 text-medic-accent" />
                                 </div>
                                 <div>
                                     <h3 className="font-bold">AI Assistant</h3>

@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from doctor.models import DoctorLicense
 from authentication.serializers import UserSerializer
+from authentication.models import CustomUser
 
 class DoctorVerificationReviewSerializer(serializers.ModelSerializer):
     doctor_details = UserSerializer(source='doctor', read_only=True)

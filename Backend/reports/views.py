@@ -7,7 +7,7 @@ from django.conf import settings
 OCR_API_URL = getattr(settings, 'OCR_API_URL', 'http://localhost:8001/extract_from_pdf')
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from drf_spectacular.utils import extend_schema
 
 from .models import Report, ExtractedReportData
@@ -18,7 +18,7 @@ from .services.analysis_service import AnalysisService
 class ReportViewSet(viewsets.ModelViewSet):
     serializer_class = ReportSerializer
     permission_classes = [permissions.IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_queryset(self):
         return Report.objects.filter(user=self.request.user).order_by('-uploaded_at')
@@ -54,9 +54,13 @@ class ReportViewSet(viewsets.ModelViewSet):
         """Send the report PDF to external OCR service and store extracted data."""
         report = self.get_object()
         try:
+            import os
             with open(report.file.path, 'rb') as f:
-                files = {'file': (report.file.name, f, 'application/pdf')}
+                filename = os.path.basename(report.file.name)
+                files = {'file': (filename, f, 'application/pdf')}
+                print(f"DEBUG: ocr_process calling {OCR_API_URL} with filename: {filename}")
                 response = requests.post(OCR_API_URL, files=files)
+            print(f"DEBUG: ocr_process response status: {response.status_code}")
             response.raise_for_status()
             data = response.json()
             # Expecting 'extracted_data' key per ML service
@@ -105,8 +109,7 @@ class ReportViewSet(viewsets.ModelViewSet):
             )
             
             if not success:
-               # We still return the report, but maybe without the result if it fails
-               pass
+               return Response({"error": "AI Analysis failed", "detail": result}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
             return Response(ReportSerializer(report).data)
         
@@ -123,6 +126,3 @@ class ReportViewSet(viewsets.ModelViewSet):
         
         from .serializers import ReportResultSerializer
         return Response(ReportResultSerializer(report.result).data)
-
-
-

@@ -12,14 +12,33 @@ class AnalysisService:
         Calls the external FastAPI analysis service and saves the results.
         """
         try:
-            # 1. Prepare data for FastAPI
+            # 1. Prepare data for FastAPI (ensure numeric values are sent as numbers)
+            cleaned_data = {}
+            for k, v in validated_data.items():
+                try:
+                    # Attempt to convert to float if it looks like a number
+                    if isinstance(v, str) and (v.replace('.', '', 1).isdigit() or (v.startswith('-') and v[1:].replace('.', '', 1).isdigit())):
+                        cleaned_data[k] = float(v)
+                    else:
+                        cleaned_data[k] = v
+                except (ValueError, TypeError):
+                    cleaned_data[k] = v
+
             analysis_payload = {
-                "patient_data": validated_data,
+                "patient_data": cleaned_data,
                 "user_id": str(user_id)
             }
             
             # 2. Call FastAPI Analysis Endpoint
-            analysis_res = requests.post(settings.ANALYSIS_API_URL, json=analysis_payload)
+            url = settings.ANALYSIS_API_URL
+            if not url.startswith('http'):
+                # Safety fallback if env var is relative
+                base_url = getattr(settings, 'ML_SERVICE_URL', 'http://127.0.0.1:8001')
+                url = f"{base_url.rstrip('/')}/{url.lstrip('/')}"
+            
+            print(f"DEBUG: Calling Analysis service at {url} with payload: {analysis_payload}")
+            analysis_res = requests.post(url, json=analysis_payload)
+            print(f"DEBUG: Analysis service response status: {analysis_res.status_code}")
             analysis_res.raise_for_status()
             analysis_data = analysis_res.json()
             
@@ -66,5 +85,10 @@ class AnalysisService:
             return True, result_obj
 
         except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"DEBUG: AI Analysis failed for report {report_instance.id}")
+            print(f"DEBUG: Exception: {str(e)}")
+            print(f"DEBUG: Traceback: {error_details}")
             logger.error(f"AI Analysis call failed for report {report_instance.id}: {str(e)}")
-            return False, str(e)
+            return False, f"{str(e)} - {error_details[:200]}"
