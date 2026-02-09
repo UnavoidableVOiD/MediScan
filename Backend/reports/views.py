@@ -126,6 +126,3 @@ class ReportViewSet(viewsets.ModelViewSet):
         
         from .serializers import ReportResultSerializer
         return Response(ReportResultSerializer(report.result).data)
-
-
-

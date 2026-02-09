@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import DoctorPatientLink, DoctorComment
+from .models import DoctorPatientLink, DoctorComment, DoctorLicense
 from reports.serializers import ReportSerializer
 
 User = get_user_model()
@@ -48,4 +48,20 @@ class DoctorCommentSerializer(serializers.ModelSerializer):
         report = data.get('report')
         if not DoctorPatientLink.objects.filter(doctor=doctor, patient=report.user).exists():
             raise serializers.ValidationError("You can only comment on reports of your linked patients.")
+        return data
+
+class DoctorLicenseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DoctorLicense
+        fields = [
+            'id', 'license_number', 'license_file', 'other_certificates', 
+            'status', 'rejection_reason', 'submitted_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'status', 'rejection_reason', 'submitted_at', 'updated_at']
+
+    def validate(self, data):
+        # Ensure only doctors can submit licenses
+        user = self.context['request'].user
+        if user.role != 'DOCTOR':
+            raise serializers.ValidationError("Only doctors can submit license information.")
         return data

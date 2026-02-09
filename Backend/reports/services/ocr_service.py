@@ -58,4 +58,3 @@ class OCRService:
             report_instance.status = 'FAILED'
             report_instance.save()
             return False
-

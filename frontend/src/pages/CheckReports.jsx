@@ -200,13 +200,12 @@ const CheckReports = () => {
           <div key={s.id} className="flex items-center">
             <div className="flex flex-col items-center relative">
               <div
-                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold transition-all z-10 ${
-                  step === s.id
+                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold transition-all z-10 ${step === s.id
                     ? "bg-medic-dark text-white ring-4 ring-medic-dark/10 shadow-lg"
                     : step > s.id
                       ? "bg-medic-accent text-medic-dark"
                       : "bg-neutral-soft text-gray-400"
-                }`}
+                  }`}
               >
                 {step > s.id ? (
                   <Check className="w-5 h-5" />
@@ -222,9 +221,8 @@ const CheckReports = () => {
             </div>
             {idx < steps.length - 1 && (
               <div
-                className={`w-6 sm:w-16 h-1 mx-1 sm:mx-2 rounded-full transition-all ${
-                  step > s.id ? "bg-medic-accent" : "bg-neutral-soft"
-                }`}
+                className={`w-6 sm:w-16 h-1 mx-1 sm:mx-2 rounded-full transition-all ${step > s.id ? "bg-medic-accent" : "bg-neutral-soft"
+                  }`}
               />
             )}
           </div>
@@ -259,11 +257,10 @@ const CheckReports = () => {
             className="bg-white rounded-3xl shadow-xl shadow-medic-dark/5 p-8 border border-medic-light/20"
           >
             <div
-              className={`border-3 border-dashed rounded-3xl p-12 text-center transition-all ${
-                file
+              className={`border-3 border-dashed rounded-3xl p-12 text-center transition-all ${file
                   ? "border-medic-dark bg-medic-light/5"
                   : "border-neutral-soft hover:border-medic-light bg-neutral-soft/50"
-              }`}
+                }`}
               onDragOver={(e) => {
                 e.preventDefault();
               }}

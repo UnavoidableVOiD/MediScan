@@ -73,7 +73,8 @@ class VerifyOTPView(views.APIView):
                         last_name=reg_data['last_name'],
                         phone_number=reg_data['phone_number'],
                         password=reg_data['password'],
-                        role=reg_data['role']
+                        role=reg_data['role'],
+                        specialization=reg_data.get('specialization')
                     )
                     user.is_verified = True
                     user.save()
@@ -197,15 +198,25 @@ class GoogleLoginView(views.APIView):
                 if not email:
                     return Response({"error": "Email not provided by Google"}, status=status.HTTP_400_BAD_REQUEST)
 
-            user, created = User.objects.get_or_create(
-                email=email,
-                defaults={
-                    'first_name': first_name,
-                    'last_name': last_name,
-                    'role': 'PATIENT',
-                    'is_verified': True
-                }
-            )
+            try:
+                user = User.objects.get(email=email)
+                # If user exists, check role
+                if user.role == 'DOCTOR':
+                    return Response({
+                        "error": "Doctors cannot use Google Login. Please use professional email and OTP."
+                    }, status=status.HTTP_403_FORBIDDEN)
+            except User.DoesNotExist:
+                # If user doesn't exist, create as PATIENT
+                user = User.objects.create_user(
+                    email=email,
+                    first_name=first_name,
+                    last_name=last_name,
+                    role='PATIENT',
+                    is_verified=True
+                )
+                created = True
+            else:
+                created = False
 
             if not created:
                 user.is_verified = True

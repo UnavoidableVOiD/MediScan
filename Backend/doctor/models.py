@@ -41,3 +41,29 @@ class DoctorComment(models.Model):
 
     def __str__(self):
         return f"Comment by {self.doctor.email} on Report {self.report.id}"
+
+
+class DoctorLicense(models.Model):
+    STATUS_CHOICES = (
+        ('PENDING', 'Pending'),
+        ('APPROVED', 'Approved'),
+        ('REJECTED', 'Rejected'),
+    )
+
+    doctor = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='license_info',
+        limit_choices_to={'role': 'DOCTOR'}
+    )
+    license_number = models.CharField(max_length=100)
+    license_file = models.FileField(upload_to='doctor_licenses/')
+    other_certificates = models.FileField(upload_to='doctor_certificates/', null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    rejection_reason = models.TextField(null=True, blank=True)
+    
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"License of {self.doctor.email} - {self.status}"

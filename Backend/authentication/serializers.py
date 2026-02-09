@@ -20,7 +20,10 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'phone_number', 'password', 'confirm_password', 'role']
+        fields = [
+            'first_name', 'last_name', 'email', 'phone_number', 
+            'password', 'confirm_password', 'role', 'specialization'
+        ]
 
     def validate_role(self, value):
         role = value.upper()
@@ -48,6 +51,22 @@ class RegisterSerializer(serializers.ModelSerializer):
              raise serializers.ValidationError("Password must contain at least one lowercase letter.")
         if not any(not char.isalnum() for char in password):
              raise serializers.ValidationError("Password must contain at least one special character.")
+
+        # Specialization validation for doctors
+        role = data.get('role', 'PATIENT').upper()
+        specialization = data.get('specialization')
+        
+        if role == 'DOCTOR':
+            if not specialization:
+                raise serializers.ValidationError({"specialization": "Specialization is required for doctors."})
+            
+            valid_specializations = [c[0] for c in User.SPECIALIZATION_CHOICES]
+            if specialization.upper() not in valid_specializations:
+                raise serializers.ValidationError({"specialization": f"Invalid specialization. Choices are: {', '.join(valid_specializations)}"})
+        elif specialization:
+             # If role is PATIENT, specialization is not required and should probably be null, 
+             # but we'll just allow it if provided for now, or clear it.
+             pass
 
         return data
 
@@ -137,5 +156,5 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'phone_number', 'role']
+        fields = ['first_name', 'last_name', 'email', 'phone_number', 'role', 'specialization']
         read_only_fields = ['email', 'role']
