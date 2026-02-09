@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'authentication',
     'reports.apps.ReportsConfig',
     'doctor',
+    'admin_panel',
     'rest_framework',
     'drf_spectacular',
     'corsheaders',

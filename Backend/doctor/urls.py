@@ -5,7 +5,8 @@ from .views import (
     MyDoctorView, 
     LinkDoctorView, 
     MyPatientsViewSet, 
-    DoctorCommentViewSet
+    DoctorCommentViewSet,
+    DoctorLicenseView
 )
 
 router = DefaultRouter()
@@ -17,4 +18,5 @@ urlpatterns = [
     path('list/', DoctorListView.as_view(), name='doctor-list'),
     path('my-doctor/', MyDoctorView.as_view(), name='my-doctor'),
     path('link/', LinkDoctorView.as_view(), name='link-doctor'),
+    path('verify/', DoctorLicenseView.as_view(), name='doctor-verify-upload'),
 ]
