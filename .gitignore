@@ -27,6 +27,9 @@ node_modules/
 /ML/benchmark_results.csv
 ML/reports/
 
-/ML/src/chat_payload.json
-/ML/src/payload.json
-/ML/test_pipeline.txt
+ML/src/chat_payload.json
+ML/src/payload.json
+ML/test_pipeline.txt
+ML/docker_chat.json
+ML/docker_payload.json
+ML/garbage.pdf

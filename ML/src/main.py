@@ -1,4 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
+import uuid
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
 import uvicorn
@@ -15,6 +18,20 @@ from generation.report_generator import MedicalReportGenerator
 from chatbot.rag import MedicalChatbot
 
 app = FastAPI(title="MediScan AI Core (Revenue Enabled)")
+
+origins = [
+    "http://localhost:3000",  #React
+    "http://localhost:5173",  #Vite
+    "*"                       
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 print("Initializing AI Services...")
 engine = DiseasePredictor()
@@ -122,11 +139,30 @@ def analyze_data_step2(request: AnalysisRequest):
 
 @app.post("/chat")
 def chat_with_medibot(request: ChatRequest):
+    """
+    Standard JSON Response (Good for simple REST clients)
+    """
     if not request.is_premium:
         return {"error": "Premium Feature Locked", "message": "Upgrade to chat."}
 
     response = chatbot.ask(request.question, patient_data=request.patient_context)
     return {"answer": response}
+
+
+@app.post("/chat_stream")
+async def chat_with_medibot_stream(request: ChatRequest):
+    """
+    Streaming Response (Best for UX).
+    Returns text chunks as they are generated.
+    """
+    if not request.is_premium:
+        raise HTTPException(status_code=403, detail="Premium Feature Locked")
+
+    #Returning a StreamingResponse wrapping the async generator
+    return StreamingResponse(
+        chatbot.stream_ask(request.question, request.patient_context),
+        media_type="text/plain"
+    )
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8001)

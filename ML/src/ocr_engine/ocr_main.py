@@ -42,10 +42,10 @@ def parse_lab_report(lines):
         'Albumin': ['Serum Albumin', 'Albumin'],
         
         # KIDNEY
-        'Blood_Urea': ['Serum Urea', 'Blood Urea', 'Urea'],
-        'Creatinine': ['Serum Creatinine', 'Creatinine', 'sc'],
-        'Sodium': ['Sodium', 'Na+'],
-        'Potassium': ['Potassium', 'K+'],
+        'Blood_Urea': ['Serum Urea', 'Blood Urea', 'B.Urea'],
+        'Creatinine': ['Serum Creatinine', 'Creatinine', 'S.Creatinine'],
+        'Sodium': ['Sodium'],
+        'Potassium': ['Potassium'],
         
         # DIABETES
         'Glucose': ['Blood Sugar', 'Fasting Blood Glucose', 'Glucose (F)', 'Glucose'],
@@ -62,6 +62,8 @@ def parse_lab_report(lines):
         'MCV': ['MCV'],
         'MCH': ['MCH'],
         'MCHC': ['MCHC'],
+        'Platelets': ['Platelet Count', 'Platelet', 'PLT', 'Total Platelet Count'],
+
 
         # --- NEW: HEART / LIPID PROFILE ---
         'Cholesterol': ['Total Cholesterol', 'Cholesterol'], # Matches "Total Cholesterol"

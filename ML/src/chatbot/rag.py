@@ -6,6 +6,8 @@ load_dotenv()
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
+from collections.abc import AsyncGenerator
+
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import ChatPromptTemplate
@@ -42,10 +44,12 @@ class MedicalChatbot:
         if not self.llm:
             print("\nMODE: LOCAL (Ollama Llama-3.2)")
             try:
+                ollama_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+                
                 self.llm = ChatOllama(
                     model="llama3.2",    
                     temperature=0.2,      
-                    base_url="http://localhost:11434"
+                    base_url=ollama_url
                 )
                 print("✓ Connected to Local Ollama.")
             except Exception as e:
@@ -70,17 +74,12 @@ class MedicalChatbot:
             print(f"!! Error loading Vector DB: {e}")
             self.db = None
 
-    def ask(self, query, patient_data=None):
-        if not self.llm:
-            return "System Error: No AI Engine is running (Check Ollama or Groq Key)."
-        
-        if not self.db:
-            return "System Error: Knowledge Base unavailable."
-
+    def _prepare_context(self, query, patient_data):
+        """Helper to prepare prompt inputs"""
         try:
             docs = self.retriever.invoke(query)
             context_text = "\n\n".join([doc.page_content for doc in docs])
-        except Exception as e:
+        except Exception:
             context_text = "No specific medical guidelines found."
 
         patient_context_str = "No specific patient report uploaded."
@@ -88,7 +87,11 @@ class MedicalChatbot:
             patient_context_str = "CURRENT PATIENT REPORT VALUES:\n"
             for key, val in patient_data.items():
                 patient_context_str += f"- {key}: {val}\n"
+        
+        return context_text, patient_context_str
 
+    def _get_chain(self):
+        """Returns the LangChain pipeline"""
         prompt_template = ChatPromptTemplate.from_template("""
         You are MediScan-Bot, an expert medical assistant.
         
@@ -103,24 +106,53 @@ class MedicalChatbot:
         USER QUESTION: {question}
 
         INSTRUCTIONS:
-        1. Base your answer strictly on the MEDICAL GUIDELINES and PATIENT REPORT DATA.
-        2. If the patient's data shows abnormal values, explicitily mention them.
-        3. Be concise and professional.
-        4. DISCLAIMER: Never give a definitive diagnosis. Always say "This suggests..." or "Consult a doctor."
+        If the user says "Hello", "Hi", or "Hey", introduce yourself as MediScan AI.
+        2. Base your answer strictly on the MEDICAL GUIDELINES and PATIENT REPORT DATA.
+        3. If the patient's data shows abnormal values, explicitily mention them.
+        4. Be concise and professional.
+        5. DISCLAIMER: Never give a definitive diagnosis. Always say "This suggests..." or "Consult a doctor."
 
         ANSWER:
         """)
+        return prompt_template | self.llm | StrOutputParser()
 
-        chain = prompt_template | self.llm | StrOutputParser()
+    def ask(self, query, patient_data=None):
+        """Synchronous method (returns full string)"""
+        if not self.llm or not self.db:
+            return "System Error: AI unavailable."
+
+        context, patient_info = self._prepare_context(query, patient_data)
+        chain = self._get_chain()
         
-        response = chain.invoke({
-            "context": context_text,
-            "patient_info": patient_context_str,
+        return chain.invoke({
+            "context": context,
+            "patient_info": patient_info,
             "question": query
         })
-        
-        return response
+
+    async def stream_ask(self, query, patient_data=None) -> AsyncGenerator[str, None]:
+        """Asynchronous Generator for Streaming Responses"""
+        if not self.llm:
+            yield "System Error: AI Engine unavailable."
+            return
+            
+        if not self.db:
+            yield "System Error: Knowledge Base unavailable."
+            return
+
+        # Prepare context (Blocking IO is acceptable here for simplicity)
+        context, patient_info = self._prepare_context(query, patient_data)
+        chain = self._get_chain()
+
+        # Stream the chunks
+        async for chunk in chain.astream({
+            "context": context,
+            "patient_info": patient_info,
+            "question": query
+        }):
+            yield chunk
 
 if __name__ == "__main__":
     bot = MedicalChatbot()
+    print("Testing Sync Ask:")
     print(bot.ask("What is a normal glucose level?"))

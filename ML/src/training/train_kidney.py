@@ -1,30 +1,58 @@
 import pandas as pd
 import os
 import joblib
+import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score, classification_report
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
-from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 data_path = os.path.join(script_dir, '../../datasets/kidney_cleaned.csv')
+models_dir = os.path.join(script_dir, '../../models')
+os.makedirs(models_dir, exist_ok=True)
+
 print(f"Loading clean data from {data_path}...")
 df = pd.read_csv(data_path)
 
 target_col = 'classification'
-X = df.drop(target_col, axis=1)
+
+REAL_WORLD_FEATURES = [
+    'sc',    # Serum Creatinine 
+    'bu',    # Blood Urea
+    'hemo',  # Hemoglobin
+    
+    'sod',   # Sodium
+    'pot',   # Potassium
+    
+    'sg',    # Specific Gravity
+    'al',    # Albumin
+    'su',    # Sugar
+
+    'age',   # Age
+    'bp',    # Blood Pressure
+    'bgr',   # Random Blood Glucose
+    'htn',   # Hypertension History (Yes/No)
+    'dm'     # Diabetes History (Yes/No)
+]
+
+available_cols = [col for col in REAL_WORLD_FEATURES if col in df.columns]
+print(f"\nTraining restricted to {len(available_cols)} Real-World Features: {available_cols}")
+
+X = df[available_cols]
 y = df[target_col]
 
-print("Fitting Imputer...")
+print("Fitting Imputer (Median)...")
 imputer = SimpleImputer(strategy='median')
 X_imputed = imputer.fit_transform(X)
 
+print("Scaling Data...")
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X_imputed)
 
@@ -32,55 +60,38 @@ X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, 
 
 models = {
     "Logistic Regression": LogisticRegression(),
-    "K-Nearest Neighbors": KNeighborsClassifier(),
-    "Support Vector Machine": SVC(probability=True),
     "Random Forest": RandomForestClassifier(n_estimators=100, random_state=42),
-    "AdaBoost": AdaBoostClassifier(random_state=42),
-    "XGBoost": XGBClassifier(use_label_encoder=False, eval_metric='logloss')
+    "XGBoost": XGBClassifier(use_label_encoder=False, eval_metric='logloss'),
+    "SVM": SVC(probability=True)
 }
 
 results = []
-
 best_f1 = 0
 best_model_name = ""
 best_model_obj = None
 
+print("\n--- TRAINING BENCHMARK ---")
 for name, model in models.items():
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
     
-    acc = accuracy_score(y_test, y_pred)
-    prec = precision_score(y_test, y_pred)
-    rec = recall_score(y_test, y_pred)
     f1 = f1_score(y_test, y_pred)
-    
-    results.append({
-        "Algorithm": name,
-        "Accuracy": acc,
-        "Precision": prec,
-        "Recall": rec,
-        "F1-Score": f1
-    })
+    results.append({"Model": name, "F1": f1})
+    print(f"   -> {name}: F1 Score = {f1:.4f}")
     
     if f1 > best_f1:
         best_f1 = f1
         best_model_name = name
         best_model_obj = model
 
-results_df = pd.DataFrame(results)
-results_df = results_df.sort_values(by="F1-Score", ascending=False)
-print(results_df.to_string(index=False))
+print(f"\nWINNER: {best_model_name} (F1: {best_f1:.2f})")
+print("\nDetailed Report:")
+print(classification_report(y_test, best_model_obj.predict(X_test)))
 
-print(f"\nBest Model: {best_model_name} (F1: {best_f1:.2f})")
+print("Saving artifacts...")
+joblib.dump(best_model_obj, os.path.join(models_dir, 'kidney_best_model.pkl'))
+joblib.dump(scaler, os.path.join(models_dir, 'kidney_scaler.pkl'))
+joblib.dump(imputer, os.path.join(models_dir, 'kidney_imputer.pkl'))
+joblib.dump(available_cols, os.path.join(models_dir, 'kidney_columns.pkl'))
 
-save_path = os.path.join(script_dir,'../../models/kidney_best_model.pkl')
-scalar_path = os.path.join(script_dir,'../../models/kidney_scaler.pkl')
-imputer_path = os.path.join(script_dir,'../../models/kidney_imputer.pkl') # <--- New
-columns_path = os.path.join(script_dir,'../../models/kidney_columns.pkl') # <--- New
-
-joblib.dump(best_model_obj, save_path)
-joblib.dump(scaler, scalar_path)
-joblib.dump(imputer, imputer_path)
-joblib.dump(X.columns.tolist(), columns_path) 
-
-print("Saved Model, Scaler, Imputer, and Columns.")
+print("Kidney Model Retrained & Saved Successfully.")

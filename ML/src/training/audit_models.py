@@ -1,140 +1,215 @@
 import pandas as pd
 import numpy as np
-import os
 import joblib
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.manifold import TSNE
-from sklearn.metrics import classification_report, recall_score, f1_score
-from sklearn.model_selection import train_test_split
+import os
+from sklearn.metrics import classification_report, accuracy_score, recall_score, f1_score
 from sklearn.preprocessing import LabelEncoder
 
 # CONFIG
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR = os.path.join(BASE_DIR, "../../models")
 DATA_DIR = os.path.join(BASE_DIR, "../../datasets")
-REPORT_DIR = os.path.join(BASE_DIR, "../../reports/figures")
-os.makedirs(REPORT_DIR, exist_ok=True)
 
-def audit_model(disease_name, csv_file, target_col, threshold=0.5):
-    print(f"\n==================================================")
-    print(f"📊 FINAL AUDIT: {disease_name.upper()}")
-    print(f"==================================================")
+def load_artifact(filename):
+    path = os.path.join(MODELS_DIR, filename)
+    if os.path.exists(path):
+        return joblib.load(path)
+    return None
 
-    # 1. LOAD DATA
-    try:
-        df = pd.read_csv(os.path.join(DATA_DIR, csv_file))
-    except FileNotFoundError:
-        print(f"❌ Data file not found: {csv_file}")
-        return
-
-    # --- CUSTOM PREPROCESSING LOGIC ---
-    if disease_name == "diabetes":
-        zero_cols = ['Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI']
-        for col in zero_cols: df[col] = df[col].replace(0, np.nan)
+def audit_diabetes():
+    print("\n" + "="*50)
+    print("📊 FINAL AUDIT: DIABETES")
+    print("="*50)
+    
+    df = pd.read_csv(os.path.join(DATA_DIR, "diabetes.csv"))
+    
+    # Same pre-processing as training
+    cols_zero = ['Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI']
+    for c in cols_zero:
+        df[c] = df[c].replace(0, np.nan)
         
-    elif disease_name == "liver":
-        if df['Gender'].dtype == 'object':
-            df['Gender'] = df['Gender'].map({'Male': 1, 'Female': 0})
-        if df['Dataset'].max() == 2:
-            df['Dataset'] = df['Dataset'].map({1: 1, 2: 0})
-
-    X = df.drop(target_col, axis=1)
-    y = df[target_col]
+    X = df.drop("Outcome", axis=1)
+    y = df["Outcome"]
     
-    # Drop IDs if present
-    drop_cols = [c for c in ['id', 'ID', 'PatientID'] if c in df.columns]
-    if drop_cols: 
-        X = X.drop(columns=drop_cols)
-
-    # Handle Thyroid string targets
-    if y.dtype == 'object':
-        le = LabelEncoder()
-        y = le.fit_transform(y.astype(str))
-        y = pd.Series(y) # Convert back to Series for value_counts
-
-    # --- CRITICAL FIX: FILTER RARE CLASSES (For Thyroid) ---
-    # We cannot split classes that have < 2 samples.
-    class_counts = y.value_counts()
-    valid_classes = class_counts[class_counts >= 2].index
+    model = load_artifact("diabetes_best_model.pkl")
+    scaler = load_artifact("diabetes_scaler.pkl")
+    imputer = load_artifact("diabetes_imputer.pkl")
     
-    if len(valid_classes) < len(class_counts):
-        # Filter both X and y
-        mask = y.isin(valid_classes)
-        X = X[mask]
-        y = y[mask]
+    if not model: return
+    
+    X_imp = imputer.transform(X)
+    X_scaled = scaler.transform(X_imp)
+    
+    # Diabetes uses probability thresholding
+    probs = model.predict_proba(X_scaled)[:, 1]
+    THRESHOLD = 0.3
+    y_pred = (probs >= THRESHOLD).astype(int)
+    
+    print(f"\n🏆 OFFICIAL METRICS:")
+    print(f"   Threshold Used: {THRESHOLD}")
+    print(classification_report(y, y_pred))
+    print(f"   >> RECALL (binary): {recall_score(y, y_pred)*100:.2f}%")
+    print(f"   >> F1-SCORE (binary): {f1_score(y, y_pred)*100:.4f}")
 
-    # 2. LOAD SAVED ARTIFACTS
+def audit_heart():
+    print("\n" + "="*50)
+    print("📊 FINAL AUDIT: HEART")
+    print("="*50)
+    
+    df = pd.read_csv(os.path.join(DATA_DIR, "heart.csv"))
+    
+    # Encoding (Same as inference logic)
+    df['Sex'] = df['Sex'].map({'M': 1, 'F': 0})
+    df['ExerciseAngina'] = df['ExerciseAngina'].map({'Y': 1, 'N': 0})
+    df = pd.get_dummies(df, columns=['ChestPainType', 'RestingECG', 'ST_Slope'])
+    
+    # Align columns
+    saved_cols = load_artifact("heart_model_columns.pkl")
+    if saved_cols is None: saved_cols = load_artifact("heart_columns.pkl")
+    
+    # Reindex to match model
+    df = df.reindex(columns=saved_cols, fill_value=0)
+    
+    # Heart CSV has 'HeartDisease' target, but reindex might have dropped it or it's not in X
+    # We need to reload y from raw CSV
+    y = pd.read_csv(os.path.join(DATA_DIR, "heart.csv"))["HeartDisease"]
+    
+    model = load_artifact("heart_best_model.pkl")
+    scaler = load_artifact("heart_scaler.pkl")
+    
+    X_scaled = scaler.transform(df)
+    
+    probs = model.predict_proba(X_scaled)[:, 1]
+    THRESHOLD = 0.5
+    y_pred = (probs >= THRESHOLD).astype(int)
+    
+    print(f"\n🏆 OFFICIAL METRICS:")
+    print(f"   Threshold Used: {THRESHOLD}")
+    print(classification_report(y, y_pred))
+    print(f"   >> RECALL (binary): {recall_score(y, y_pred)*100:.2f}%")
+    print(f"   >> F1-SCORE (binary): {f1_score(y, y_pred)*100:.4f}")
+
+def audit_kidney():
+    print("\n" + "="*50)
+    print("📊 FINAL AUDIT: KIDNEY")
+    print("="*50)
+    
     try:
-        model = joblib.load(os.path.join(MODELS_DIR, f"{disease_name}_best_model.pkl"))
-        imputer = joblib.load(os.path.join(MODELS_DIR, f"{disease_name}_imputer.pkl"))
-        scaler = joblib.load(os.path.join(MODELS_DIR, f"{disease_name}_scaler.pkl"))
-    except FileNotFoundError:
-        print(f"❌ Model artifacts not found for {disease_name}")
-        return
+        df = pd.read_csv(os.path.join(DATA_DIR, "kidney_cleaned.csv"))
+        y = df['classification']
+        
+        # --- FIX: Load the specific columns the model was trained on ---
+        trained_cols = load_artifact("kidney_columns.pkl")
+        
+        if trained_cols:
+            # Filter X to only the 13 real-world columns
+            X = df[trained_cols]
+        else:
+            X = df.drop('classification', axis=1) # Fallback (will crash if mismatch)
 
-    # 3. TRANSFORM
-    if disease_name not in ['liver']: 
-        X = pd.get_dummies(X, drop_first=True)
-
-    try:
+        model = load_artifact("kidney_best_model.pkl")
+        imputer = load_artifact("kidney_imputer.pkl")
+        scaler = load_artifact("kidney_scaler.pkl")
+        
         X_imp = imputer.transform(X)
         X_scaled = scaler.transform(X_imp)
-    except ValueError as e:
-        print(f"⚠️ Feature Mismatch Error: {e}")
-        return
+        
+        y_pred = model.predict(X_scaled)
+        
+        print(f"\n🏆 OFFICIAL METRICS:")
+        print(classification_report(y, y_pred))
+        print(f"   >> RECALL (binary): {recall_score(y, y_pred)*100:.2f}%")
+        print(f"   >> F1-SCORE (binary): {f1_score(y, y_pred)*100:.4f}")
+        
+    except Exception as e:
+        print(f"⚠️ Error: {e}")
 
-    # 4. GENERATE t-SNE PLOT
-    # print("   -> Generating Final t-SNE Plot...")
-    # try:
-    #     if len(y) > 1500:
-    #         idx = np.random.choice(len(y), 1500, replace=False)
-    #         X_vis = X_scaled[idx]
-    #         y_vis = y.iloc[idx] if hasattr(y, 'iloc') else y[idx]
-    #     else:
-    #         X_vis = X_scaled
-    #         y_vis = y
-            
-    #     perp = min(30, len(y_vis)-1)
-    #     tsne = TSNE(n_components=2, random_state=42, perplexity=perp)
-    #     X_tsne = tsne.fit_transform(X_vis)
+def audit_liver():
+    print("\n" + "="*50)
+    print("📊 FINAL AUDIT: LIVER")
+    print("="*50)
+    
+    df = pd.read_csv(os.path.join(DATA_DIR, "indian_liver_patient.csv"))
+    df['Gender'] = df['Gender'].map({'Male': 1, 'Female': 0})
+    df['Dataset'] = df['Dataset'].map({1: 1, 2: 0})
+    
+    X = df.drop("Dataset", axis=1)
+    y = df["Dataset"]
+    
+    model = load_artifact("liver_best_model.pkl")
+    imputer = load_artifact("liver_imputer.pkl")
+    scaler = load_artifact("liver_scaler.pkl")
+    
+    X_imp = imputer.transform(X)
+    X_scaled = scaler.transform(X_imp)
+    
+    probs = model.predict_proba(X_scaled)[:, 1]
+    THRESHOLD = 0.5
+    y_pred = (probs >= THRESHOLD).astype(int)
+    
+    print(f"\n🏆 OFFICIAL METRICS:")
+    print(f"   Threshold Used: {THRESHOLD}")
+    print(classification_report(y, y_pred))
+    print(f"   >> RECALL (binary): {recall_score(y, y_pred)*100:.2f}%")
+    print(f"   >> F1-SCORE (binary): {f1_score(y, y_pred)*100:.4f}")
 
-    #     plt.figure(figsize=(8, 6))
-    #     sns.scatterplot(x=X_tsne[:,0], y=X_tsne[:,1], hue=y_vis, palette='coolwarm', alpha=0.8)
-    #     plt.title(f"Final t-SNE: {disease_name.title()}")
-    #     plt.savefig(os.path.join(REPORT_DIR, f"{disease_name}_final_tsne.png"))
-    #     plt.close()
-    #     print(f"   -> Plot saved to {disease_name}_final_tsne.png")
-    # except Exception as e:
-    #     print(f"   -> t-SNE Failed: {e}")
+def audit_anemia():
+    print("\n" + "="*50)
+    print("📊 FINAL AUDIT: ANEMIA")
+    print("="*50)
+    
+    df = pd.read_csv(os.path.join(DATA_DIR, "anemia.csv"))
+    X = df.drop("Result", axis=1)
+    y = df["Result"]
+    
+    model = load_artifact("anemia_best_model.pkl")
+    imputer = load_artifact("anemia_imputer.pkl")
+    scaler = load_artifact("anemia_scaler.pkl")
+    
+    X_imp = imputer.transform(X)
+    X_scaled = scaler.transform(X_imp)
+    y_pred = model.predict(X_scaled)
+    
+    print(f"\n🏆 OFFICIAL METRICS:")
+    print(classification_report(y, y_pred))
+    print(f"   >> RECALL (binary): {recall_score(y, y_pred)*100:.2f}%")
+    print(f"   >> F1-SCORE (binary): {f1_score(y, y_pred)*100:.4f}")
 
-    # 5. VALIDATE PERFORMANCE
-    # Split using same seed
-    _, X_test, _, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42, stratify=y)
+def audit_thyroid():
+    print("\n" + "="*50)
+    print("📊 FINAL AUDIT: THYROID")
+    print("="*50)
     
-    # Prediction Logic
-    if hasattr(model, "predict_proba") and len(np.unique(y)) == 2:
-        probs = model.predict_proba(X_test)[:, 1]
-        preds = (probs >= threshold).astype(int)
-    else:
-        preds = model.predict(X_test)
-
-    print("\n🏆 OFFICIAL METRICS:")
-    print(f"   Threshold Used: {threshold}")
+    df = pd.read_csv(os.path.join(DATA_DIR, "thyroid_big.csv"))
     
-    avg_type = 'weighted' if len(np.unique(y)) > 2 else 'binary'
+    # Preprocessing (Label Encode target)
+    le = LabelEncoder()
+    df['target'] = le.fit_transform(df['target'].astype(str))
     
-    print(classification_report(y_test, preds))
-    rec = recall_score(y_test, preds, average=avg_type, zero_division=0)
-    f1 = f1_score(y_test, preds, average=avg_type, zero_division=0)
+    drop_cols = [c for c in ['id', 'ID', 'PatientID'] if c in df.columns]
+    df = df.drop(columns=drop_cols)
     
-    print(f"   >> RECALL ({avg_type}): {rec:.2%}")
-    print(f"   >> F1-SCORE ({avg_type}): {f1:.4f}")
+    X = df.drop("target", axis=1)
+    y = df["target"]
+    X = pd.get_dummies(X, drop_first=True)
+    
+    model = load_artifact("thyroid_best_model.pkl")
+    imputer = load_artifact("thyroid_imputer.pkl")
+    scaler = load_artifact("thyroid_scaler.pkl")
+    
+    X_imp = imputer.transform(X)
+    X_scaled = scaler.transform(X_imp)
+    y_pred = model.predict(X_scaled)
+    
+    print(f"\n🏆 OFFICIAL METRICS:")
+    print(classification_report(y, y_pred))
+    print(f"   >> RECALL (weighted): {recall_score(y, y_pred, average='weighted')*100:.2f}%")
+    print(f"   >> F1-SCORE (weighted): {f1_score(y, y_pred, average='weighted')*100:.4f}")
 
 if __name__ == "__main__":
-    audit_model("diabetes", "diabetes.csv", "Outcome", threshold=0.30)
-    audit_model("liver", "indian_liver_patient.csv", "Dataset", threshold=0.50)
-    audit_model("heart", "heart.csv", "HeartDisease")
-    audit_model("kidney", "kidney_cleaned.csv", "classification")
-    audit_model("anemia", "anemia.csv", "Result")
-    audit_model("thyroid", "thyroid_big.csv", "target")
+    audit_diabetes()
+    audit_liver()
+    audit_heart()
+    audit_kidney()
+    audit_anemia()
+    audit_thyroid()

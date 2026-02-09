@@ -62,7 +62,7 @@ class DiseasePredictor:
             X = self._prepare_input(df, self.artifacts['diabetes_cols'], self.artifacts['diabetes_imputer'], self.artifacts['diabetes_scaler'])
             
             prob = float(model.predict_proba(X)[0][1])
-            THRESHOLD = 0.30 
+            THRESHOLD = 0.20 
             
             prediction = "Diabetic" if prob >= THRESHOLD else "Healthy"
             
