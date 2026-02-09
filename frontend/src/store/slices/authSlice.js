@@ -102,6 +102,11 @@ const authSlice = createSlice({
     name: 'auth',
     initialState,
     reducers: {
+        setCredentials: (state, action) => {
+            const { user } = action.payload;
+            state.user = user;
+            state.isAuthenticated = true;
+        },
         setTempEmail: (state, action) => {
             state.tempEmail = action.payload;
             state.isVerifying = true;
@@ -252,5 +257,5 @@ const authSlice = createSlice({
     },
 });
 
-export const { setTempEmail, clearVerification, resetError } = authSlice.actions;
+export const { setTempEmail, clearVerification, resetError, setCredentials } = authSlice.actions;
 export default authSlice.reducer;

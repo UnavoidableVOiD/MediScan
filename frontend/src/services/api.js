@@ -36,5 +36,14 @@ api.interceptors.response.use(
     }
 );
 
+
+export const adminApi = {
+    login: (credentials) => api.post('/auth/login/', { ...credentials, role: 'ADMIN' }),
+    getDoctors: (status) => api.get(`/doctor/admin/list/${status ? `?status=${status}` : ''}`),
+    verifyDoctor: (id, data) => api.put(`/doctor/admin/verify/${id}/`, data),
+    getPatients: () => api.get('/auth/admin/patients/'),
+    createAdmin: (data) => api.post('/auth/admin/create/', data),
+};
+
 export default api;
 

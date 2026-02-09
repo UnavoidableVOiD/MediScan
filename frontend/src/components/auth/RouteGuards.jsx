@@ -34,3 +34,20 @@ export const PublicRoute = ({ children }) => {
 
     return children;
 };
+
+export const AdminRoute = ({ children }) => {
+    const { isAuthenticated, user, initialized } = useSelector(state => state.auth);
+    const location = useLocation();
+
+    if (!initialized) return null;
+
+    if (!isAuthenticated) {
+        return <Navigate to="/admin/login" state={{ from: location }} replace />;
+    }
+
+    if (user?.role !== 'ADMIN' && !user?.is_superuser) {
+        return <Navigate to="/" replace />;
+    }
+
+    return children;
+};
