@@ -9,26 +9,64 @@ const ChatbotAssistant = () => {
         { role: 'bot', content: 'Hello! I am your Mediscan Assistant. How can I help you understand your reports today?' }
     ]);
     const [input, setInput] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const { user, isAuthenticated } = useSelector(state => state.auth);
 
-    // Don't show if not logged in or if on profile page (simulated)
-    if (!isAuthenticated || user?.role !== 'patient') return null;
+    // Show for patients (case-insensitive check)
+    if (!isAuthenticated || user?.role?.toLowerCase() !== 'patient') return null;
 
-    const handleSend = (e) => {
+    const handleSend = async (e) => {
         e.preventDefault();
-        if (!input.trim()) return;
+        if (!input.trim() || isLoading) return;
 
         const userMsg = { role: 'user', content: input };
-        setMessages([...messages, userMsg]);
+        setMessages(prev => [...prev, userMsg]);
         setInput('');
+        setIsLoading(true);
 
-        // Simulate bot response
-        setTimeout(() => {
-            setMessages(prev => [...prev, {
-                role: 'bot',
-                content: `I've analyzed your question about "${input}". Based on your recent Blood Work, your indicators are within optimal ranges, but you might want to discuss the LDL levels with your doctor.`
-            }]);
-        }, 1000);
+        const botMsgId = Date.now();
+        setMessages(prev => [...prev, { role: 'bot', content: '', id: botMsgId }]);
+
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/chatbot/chat/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    question: input,
+                    patient_context: "The user is viewing their medical dashboard."
+                }),
+            });
+
+            if (!response.ok) throw new Error('Failed to connect to AI service');
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let done = false;
+
+            while (!done) {
+                const { value, done: doneReading } = await reader.read();
+                done = doneReading;
+                const chunkValue = decoder.decode(value, { stream: true });
+
+                setMessages(prev => prev.map(msg =>
+                    msg.id === botMsgId
+                        ? { ...msg, content: msg.content + chunkValue }
+                        : msg
+                ));
+            }
+        } catch (err) {
+            console.error(err);
+            setMessages(prev => prev.map(msg =>
+                msg.id === botMsgId
+                    ? { ...msg, content: "I'm sorry, I'm having trouble connecting to the AI service right now. Please try again later." }
+                    : msg
+            ));
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (

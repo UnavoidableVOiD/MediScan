@@ -154,18 +154,6 @@ const PatientDashboard = () => {
                     </div>
                 </div>
 
-                <div className="bg-medic-accent/10 rounded-[2rem] p-8 space-y-6 border border-medic-accent/20">
-                    <div className="w-12 h-12 bg-medic-accent/20 rounded-2xl flex items-center justify-center text-medic-dark">
-                        <Activity className="w-6 h-6" />
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-900">AI Health Tip</h3>
-                    <p className="text-sm text-gray-600 leading-relaxed font-medium">
-                        "Regular check-ups are the best way to catch health issues early. Your next cardiovascular screening is due in 3 months."
-                    </p>
-                    <button className="w-full py-3 bg-medic-dark text-white rounded-xl font-bold hover:bg-medic-primary transition-all shadow-lg shadow-medic-dark/10">
-                        View Recommendations
-                    </button>
-                </div>
             </section>
 
             {/* Reports List */}

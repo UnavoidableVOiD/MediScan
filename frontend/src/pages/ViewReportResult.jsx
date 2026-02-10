@@ -355,7 +355,7 @@ const ViewReportResult = () => {
               </AnimatePresence>
             </div>
 
-            {/* 3. Risk Indicators */}
+            {/* 3. Risk Indicators & AI Recommendations */}
             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
               <button
                 onClick={() =>
@@ -368,7 +368,7 @@ const ViewReportResult = () => {
                     <ShieldAlert className="w-5 h-5" />
                   </div>
                   <span className="text-lg font-bold text-gray-900">
-                    Risk Indicators
+                    Risk Assessment & Recommendations
                   </span>
                 </div>
                 {openAccordion === "risk" ? (
@@ -383,28 +383,86 @@ const ViewReportResult = () => {
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    className="px-8 pb-8 flex flex-col sm:flex-row items-center gap-6"
+                    className="px-8 pb-8 space-y-8"
                   >
-                    <div className="space-y-1 w-full sm:w-auto">
-                      <span className="text-[10px] sm:text-sm font-bold text-gray-400 uppercase tracking-widest block text-center sm:text-left">
-                        Identified Risk Level
-                      </span>
-                      <div className="flex flex-col sm:flex-row items-center gap-4">
-                        <span
-                          className={`w-full sm:w-auto px-6 py-2 rounded-2xl text-lg font-bold text-center ${currentResult?.risk_level === "Low"
-                            ? "bg-green-100 text-green-700"
-                            : currentResult?.risk_level === "Medium"
-                              ? "bg-orange-100 text-orange-700"
-                              : "bg-red-100 text-red-700"
-                            }`}
-                        >
-                          {currentResult?.risk_level} Risk
+                    <div className="flex flex-col sm:flex-row items-center gap-6 p-6 bg-gray-50 rounded-[2rem] border border-gray-100">
+                      <div className="space-y-1 w-full sm:w-auto">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block text-center sm:text-left">
+                          Analyzed Risk Level
                         </span>
-                        <p className="text-sm text-gray-500 max-w-xs italic text-center sm:text-left">
-                          "Based on available laboratory markers, your current
-                          risk assessment is categorized as{" "}
-                          {currentResult?.risk_level}."
-                        </p>
+                        <div className="flex flex-col sm:flex-row items-center gap-4">
+                          <span
+                            className={`w-full sm:w-auto px-6 py-2 rounded-2xl text-lg font-bold text-center ${currentResult?.risk_level === "Low"
+                              ? "bg-green-100 text-green-700"
+                              : currentResult?.risk_level === "Medium"
+                                ? "bg-orange-100 text-orange-700"
+                                : "bg-red-100 text-red-700"
+                              }`}
+                          >
+                            {currentResult?.risk_level} Risk
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-600 leading-relaxed italic text-center sm:text-left flex-1">
+                        "Based on the clinical markers extracted from your report, our AI has categorized your health status as <strong>{currentResult?.risk_level} Risk</strong>. This assessment helps prioritize medical attention."
+                      </p>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h4 className="text-sm font-black text-gray-400 uppercase tracking-tighter px-2">AI-Powered Recommendations</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {currentResult?.risk_level === 'High' ? (
+                          <>
+                            <div className="p-5 bg-red-50 border border-red-100 rounded-2xl flex gap-4">
+                              <AlertCircle className="w-6 h-6 text-red-500 shrink-0" />
+                              <div className="space-y-1">
+                                <h5 className="font-bold text-red-900">Urgent Consultation</h5>
+                                <p className="text-xs text-red-700/80">Schedule an appointment with a {currentResult?.suggested_specialization || 'specialist'} within the next 24-48 hours.</p>
+                              </div>
+                            </div>
+                            <div className="p-5 bg-amber-50 border border-amber-100 rounded-2xl flex gap-4">
+                              <Activity className="w-6 h-6 text-amber-500 shrink-0" />
+                              <div className="space-y-1">
+                                <h5 className="font-bold text-amber-900">Monitor Symptoms</h5>
+                                <p className="text-xs text-amber-700/80">Track any physical changes or discomfort and report them immediately to your doctor.</p>
+                              </div>
+                            </div>
+                          </>
+                        ) : currentResult?.risk_level === 'Medium' ? (
+                          <>
+                            <div className="p-5 bg-orange-50 border border-orange-100 rounded-2xl flex gap-4">
+                              <Calendar className="w-6 h-6 text-orange-500 shrink-0" />
+                              <div className="space-y-1">
+                                <h5 className="font-bold text-orange-900">Follow-up Appointment</h5>
+                                <p className="text-xs text-orange-700/80">Consult with a {currentResult?.suggested_specialization || 'specialist'} this week to discuss these results.</p>
+                              </div>
+                            </div>
+                            <div className="p-5 bg-blue-50 border border-blue-100 rounded-2xl flex gap-4">
+                              <TrendingUp className="w-6 h-6 text-blue-500 shrink-0" />
+                              <div className="space-y-1">
+                                <h5 className="font-bold text-blue-900">Lifestyle Adjustments</h5>
+                                <p className="text-xs text-blue-700/80">Review your diet and activity levels based on the abnormal parameters detected.</p>
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="p-5 bg-green-50 border border-green-100 rounded-2xl flex gap-4">
+                              <CheckCircle2 className="w-6 h-6 text-green-500 shrink-0" />
+                              <div className="space-y-1">
+                                <h5 className="font-bold text-green-900">Maintain Routine</h5>
+                                <p className="text-xs text-green-700/80">Continue your current healthy habits. Follow up as per your regular check-up schedule.</p>
+                              </div>
+                            </div>
+                            <div className="p-5 bg-blue-50 border border-blue-100 rounded-2xl flex gap-4">
+                              <Heart className="w-6 h-6 text-blue-500 shrink-0" />
+                              <div className="space-y-1">
+                                <h5 className="font-bold text-blue-900">Preventive Care</h5>
+                                <p className="text-xs text-blue-700/80">Focus on balanced nutrition and hydration to keep these markers in their optimal range.</p>
+                              </div>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                   </motion.div>
@@ -438,7 +496,13 @@ const ViewReportResult = () => {
                 measurements in simpler terms?"
               </p>
 
-              <button className="w-full py-4 bg-medic-accent text-medic-dark rounded-2xl font-bold hover:bg-medic-accent/90 transition-all active:scale-95 shadow-lg shadow-black/20">
+              <button
+                onClick={() => {
+                  const chatbotBtn = document.querySelector('button.fixed.bottom-8.right-8');
+                  if (chatbotBtn) chatbotBtn.click();
+                }}
+                className="w-full py-4 bg-medic-accent text-medic-dark rounded-2xl font-bold hover:bg-medic-accent/90 transition-all active:scale-95 shadow-lg shadow-black/20"
+              >
                 Explain in Simple Terms
               </button>
 
@@ -459,49 +523,51 @@ const ViewReportResult = () => {
           </div>
 
           {/* Recommended Doctors Section */}
-          <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-sm space-y-6">
-            <h3 className="text-xl font-bold text-gray-900 flex items-center gap-3">
-              <Activity className="w-6 h-6 text-medic-dark" /> Recommended Specialists
-            </h3>
+          {currentResult && (
+            <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-sm space-y-6">
+              <h3 className="text-xl font-bold text-gray-900 flex items-center gap-3">
+                <Activity className="w-6 h-6 text-medic-dark" /> Recommended Specialists
+              </h3>
 
-            <div className="space-y-4">
-              {recommendedLoading ? (
-                <div className="flex justify-center py-10">
-                  <Loader2 className="w-8 h-8 text-medic-dark animate-spin" />
-                </div>
-              ) : recommendedDoctors.length > 0 ? (
-                recommendedDoctors.map((doc) => (
-                  <div key={doc.id} className="p-4 bg-neutral-soft/30 rounded-2xl border border-gray-100 space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-medic-dark rounded-xl flex items-center justify-center text-white font-bold">
-                        {doc.first_name[0]}{doc.last_name[0]}
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-gray-900">Dr. {doc.first_name} {doc.last_name}</h4>
-                        <p className="text-xs text-medic-dark font-bold uppercase">{doc.specialization?.replace('_', ' ')}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-bold text-gray-500">Fee: Rs. {doc.consultation_fee}</span>
-                      <button
-                        onClick={() => {
-                          setSelectedDoctor(doc);
-                          setIsBookingModalOpen(true);
-                        }}
-                        className="px-4 py-2 bg-medic-dark text-white rounded-lg text-xs font-bold hover:bg-medic-primary transition-all"
-                      >
-                        Book Now
-                      </button>
-                    </div>
+              <div className="space-y-4">
+                {recommendedLoading ? (
+                  <div className="flex justify-center py-10">
+                    <Loader2 className="w-8 h-8 text-medic-dark animate-spin" />
                   </div>
-                ))
-              ) : (
-                <p className="text-sm text-gray-500 italic text-center py-4">
-                  No specialists found for this condition.
-                </p>
-              )}
+                ) : recommendedDoctors.length > 0 ? (
+                  recommendedDoctors.map((doc) => (
+                    <div key={doc.id} className="p-4 bg-neutral-soft/30 rounded-2xl border border-gray-100 space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-medic-dark rounded-xl flex items-center justify-center text-white font-bold">
+                          {doc.first_name[0]}{doc.last_name[0]}
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-gray-900">Dr. {doc.first_name} {doc.last_name}</h4>
+                          <p className="text-xs text-medic-dark font-bold uppercase">{doc.specialization?.replace('_', ' ')}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-bold text-gray-500">Fee: Rs. {doc.consultation_fee}</span>
+                        <button
+                          onClick={() => {
+                            setSelectedDoctor(doc);
+                            setIsBookingModalOpen(true);
+                          }}
+                          className="px-4 py-2 bg-medic-dark text-white rounded-lg text-xs font-bold hover:bg-medic-primary transition-all"
+                        >
+                          Book Now
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500 italic text-center py-4">
+                    No specialists found for this condition.
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
