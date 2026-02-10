@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     'reports.apps.ReportsConfig',
     'doctor',
     'admin_panel',
+    'chatbot',
     'rest_framework',
     'drf_spectacular',
     'corsheaders',
@@ -165,6 +166,9 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'API documentation for the Mediscan project.',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
+    'ENUM_NAME_OVERRIDES': {
+        'DoctorPatientLinkStatusEnum': 'doctor.models.DoctorPatientLink.STATUS_CHOICES',
+    },
 }
 
 AUTH_USER_MODEL = 'authentication.CustomUser'
@@ -174,12 +178,17 @@ GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
 CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://localhost:5173",
+    "https://mediscan-2x6s.vercel.app"
 ]
 CORS_ALLOW_CREDENTIALS = True
 
-ML_SERVICE_URL = os.getenv('ML_SERVICE_URL', 'http://127.0.0.1:8001')
+ML_SERVICE_URL = os.getenv('ML_SERVICE_URL') or 'http://127.0.0.1:8001'
 OCR_API_URL = f"{ML_SERVICE_URL}/extract_from_pdf"
-ANALYSIS_API_URL = os.getenv('ANALYSIS_API_URL', f"{ML_SERVICE_URL}/analyze_verified_data")
+ANALYSIS_API_URL = os.getenv('ANALYSIS_API_URL') or f"{ML_SERVICE_URL}/analyze_verified_data"
+
+# Khalti Payment Gateway
+KHALTI_PUBLIC_KEY = os.getenv('KHALTI_PUBLIC_KEY')
+KHALTI_SECRET_KEY = os.getenv('KHALTI_SECRET_KEY')
 
 # Google OAuth COOP fix
 SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'

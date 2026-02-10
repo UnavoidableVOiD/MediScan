@@ -201,10 +201,10 @@ const CheckReports = () => {
             <div className="flex flex-col items-center relative">
               <div
                 className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold transition-all z-10 ${step === s.id
-                    ? "bg-medic-dark text-white ring-4 ring-medic-dark/10 shadow-lg"
-                    : step > s.id
-                      ? "bg-medic-accent text-medic-dark"
-                      : "bg-neutral-soft text-gray-400"
+                  ? "bg-medic-dark text-white ring-4 ring-medic-dark/10 shadow-lg"
+                  : step > s.id
+                    ? "bg-medic-accent text-medic-dark"
+                    : "bg-neutral-soft text-gray-400"
                   }`}
               >
                 {step > s.id ? (
@@ -258,8 +258,8 @@ const CheckReports = () => {
           >
             <div
               className={`border-3 border-dashed rounded-3xl p-12 text-center transition-all ${file
-                  ? "border-medic-dark bg-medic-light/5"
-                  : "border-neutral-soft hover:border-medic-light bg-neutral-soft/50"
+                ? "border-medic-dark bg-medic-light/5"
+                : "border-neutral-soft hover:border-medic-light bg-neutral-soft/50"
                 }`}
               onDragOver={(e) => {
                 e.preventDefault();
@@ -357,7 +357,7 @@ const CheckReports = () => {
                       File Uploaded Successfully
                     </h2>
                     <p className="text-gray-500 max-w-sm mx-auto">
-                      The report <b>{currentReport?.file.split("/").pop()}</b>{" "}
+                      The report <b>{currentReport?.file?.split("/").pop() || 'Medical Report'}</b>{" "}
                       is ready for data extraction. Click the button below to
                       start the OCR process.
                     </p>

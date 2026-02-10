@@ -9,7 +9,7 @@ import { verifyOTP, clearVerification, loginUser } from '../store/slices/authSli
 const OtpVerification = () => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
-    const { tempEmail, isVerifying, loading, isAuthenticated, flowType } = useSelector(state => state.auth);
+    const { tempEmail, isVerifying, loading, isAuthenticated, flowType, user } = useSelector(state => state.auth);
 
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [timer, setTimer] = useState(60);
@@ -24,10 +24,16 @@ const OtpVerification = () => {
     }, [isVerifying, tempEmail, navigate, isAuthenticated]);
 
     useEffect(() => {
-        if (isAuthenticated) {
-            navigate('/dashboard');
+        if (isAuthenticated && user) {
+            if (user.role === 'ADMIN' || user.is_superuser) {
+                navigate('/admin/dashboard');
+            } else if (user.role === 'DOCTOR') {
+                navigate('/doctor-dashboard');
+            } else {
+                navigate('/dashboard');
+            }
         }
-    }, [isAuthenticated, navigate]);
+    }, [isAuthenticated, user, navigate]);
 
     useEffect(() => {
         let interval = null;

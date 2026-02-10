@@ -1,25 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import { adminApi } from '../../services/api';
-import { toast } from 'react-toastify';
-import { User, Phone, Mail } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { User, Phone, Mail, ShieldAlert, Trash2 } from 'lucide-react';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchAdminPatients, updatePatient, deletePatient } from '../../store/slices/adminSlice';
 
 const AdminPatients = () => {
-    const [patients, setPatients] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const dispatch = useDispatch();
+    const { user } = useSelector(state => state.auth);
+    const { patients, loading } = useSelector(state => state.admin);
 
     useEffect(() => {
-        fetchPatients();
-    }, []);
+        dispatch(fetchAdminPatients());
+    }, [dispatch]);
 
-    const fetchPatients = async () => {
-        setLoading(true);
+    const handleUpdatePatient = async (id, data) => {
         try {
-            const response = await adminApi.getPatients();
-            setPatients(response.data);
+            await dispatch(updatePatient({ id, data })).unwrap();
         } catch (error) {
-            toast.error("Failed to fetch patients");
-        } finally {
-            setLoading(false);
+            // toast handled by slice
+        }
+    };
+
+    const handleDeletePatient = async (id) => {
+        if (!window.confirm("Are you sure you want to delete this patient? This action cannot be undone.")) return;
+        try {
+            await dispatch(deletePatient(id)).unwrap();
+        } catch (error) {
+            // toast handled by slice
         }
     };
 
@@ -41,11 +47,19 @@ const AdminPatients = () => {
                         <div key={patient.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all">
                             <div className="flex items-center gap-4 mb-4">
                                 <div className="w-12 h-12 bg-medic-accent/10 text-medic-accent rounded-full flex items-center justify-center font-bold text-lg">
-                                    {patient.first_name[0]}{patient.last_name[0]}
+                                    {(patient.first_name?.[0] || '') + (patient.last_name?.[0] || '')}
                                 </div>
                                 <div>
                                     <h3 className="font-bold text-gray-900">{patient.first_name} {patient.last_name}</h3>
-                                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">Patient</span>
+                                    <div className="flex gap-2 items-center">
+                                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">Patient</span>
+                                        {!patient.is_active && (
+                                            <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                                                <ShieldAlert className="w-3 h-3" />
+                                                Blocked
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
@@ -58,6 +72,32 @@ const AdminPatients = () => {
                                     <Phone className="w-4 h-4 text-gray-400" />
                                     <span>{patient.phone_number || 'N/A'}</span>
                                 </div>
+                            </div>
+
+                            <div className="mt-6 pt-4 border-t flex gap-2">
+                                {(user?.is_staff || user?.is_superuser) && (
+                                    <>
+                                        <button
+                                            onClick={() => handleUpdatePatient(patient.id, { is_active: !patient.is_active })}
+                                            title={patient.is_active ? "Block Patient" : "Unblock Patient"}
+                                            className={`flex-1 py-2 rounded-lg font-bold text-xs flex items-center justify-center gap-2 transition-all ${patient.is_active
+                                                ? 'bg-orange-50 text-orange-600 hover:bg-orange-100'
+                                                : 'bg-orange-600 text-white hover:bg-orange-700'
+                                                }`}
+                                        >
+                                            <ShieldAlert className="w-3.5 h-3.5" />
+                                            {patient.is_active ? 'Block' : 'Unblock'}
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeletePatient(patient.id)}
+                                            title="Delete Patient"
+                                            className="flex-1 py-2 rounded-lg font-bold text-xs bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center gap-2 transition-all"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                            Delete
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         </div>
                     ))}

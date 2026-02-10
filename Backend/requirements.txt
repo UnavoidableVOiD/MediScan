@@ -7,3 +7,5 @@ psycopg[binary]>=3.2.0
 redis
 django-redis
 python-dotenv
+drf-spectacular
+httpx

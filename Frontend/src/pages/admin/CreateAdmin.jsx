@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { adminApi } from '../../services/api';
-import { toast } from 'react-toastify';
+import { useDispatch } from 'react-redux';
 import { UserPlus, Mail, Lock, Phone, User, CheckCircle } from 'lucide-react';
+import { createAdmin } from '../../store/slices/adminSlice';
 
 const CreateAdmin = () => {
+    const dispatch = useDispatch();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         first_name: '',
@@ -21,8 +22,7 @@ const CreateAdmin = () => {
         e.preventDefault();
         setLoading(true);
         try {
-            await adminApi.createAdmin(formData);
-            toast.success("New Admin created successfully!");
+            await dispatch(createAdmin(formData)).unwrap();
             setFormData({
                 first_name: '',
                 last_name: '',
@@ -31,7 +31,7 @@ const CreateAdmin = () => {
                 password: ''
             });
         } catch (error) {
-            toast.error(error.response?.data?.error || "Failed to create admin");
+            // toast handled by slice
         } finally {
             setLoading(false);
         }

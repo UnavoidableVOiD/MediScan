@@ -79,7 +79,8 @@ class AnalysisService:
                     "key_findings": key_findings,
                     "conditions": conditions,
                     "risk_level": risk_level,
-                    "confidence_score": 95.0
+                    "confidence_score": 95.0,
+                    "suggested_specialization": self._get_suggested_specialty(conditions)
                 }
             )
             return True, result_obj
@@ -92,3 +93,24 @@ class AnalysisService:
             print(f"DEBUG: Traceback: {error_details}")
             logger.error(f"AI Analysis call failed for report {report_instance.id}: {str(e)}")
             return False, f"{str(e)} - {error_details[:200]}"
+    @staticmethod
+    def _get_suggested_specialty(conditions):
+        """
+        Simple mapping from conditions to doctor specializations.
+        """
+        specialty_map = {
+            'Diabetes': 'GENERAL_PHYSICIAN',
+            'Hypertension': 'CARDIOLOGIST',
+            'Heart Disease': 'CARDIOLOGIST',
+            'Skin Allergy': 'DERMATOLOGIST',
+            'Migraine': 'NEUROLOGIST',
+            'Fracture': 'ORTHOPEDIC',
+            'Flu': 'PEDIATRICIAN',
+        }
+        
+        for condition in conditions:
+            name = condition.get('name')
+            if name in specialty_map:
+                return specialty_map[name]
+        
+        return 'GENERAL_PHYSICIAN'  # Default fallback

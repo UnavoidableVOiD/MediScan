@@ -1,0 +1,2240 @@
+openapi: 3.0.3
+info:
+  title: Mediscan API
+  version: 1.0.0
+  description: API documentation for the Mediscan project.
+paths:
+  /api/admin/create-admin/:
+    post:
+      operationId: admin_create_admin_create
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminCreate'
+        required: true
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCreate'
+          description: ''
+  /api/admin/doctors/:
+    get:
+      operationId: admin_doctors_list
+      tags:
+      - admin
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminUser'
+          description: ''
+    post:
+      operationId: admin_doctors_create
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminUser'
+        required: true
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUser'
+          description: ''
+  /api/admin/doctors/{id}/:
+    get:
+      operationId: admin_doctors_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - admin
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUser'
+          description: ''
+    put:
+      operationId: admin_doctors_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminUser'
+        required: true
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUser'
+          description: ''
+    patch:
+      operationId: admin_doctors_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAdminUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAdminUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAdminUser'
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUser'
+          description: ''
+    delete:
+      operationId: admin_doctors_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - admin
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/admin/login/:
+    post:
+      operationId: admin_login_create
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Login'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Login'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Login'
+        required: true
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Login'
+          description: ''
+  /api/admin/patients/:
+    get:
+      operationId: admin_patients_list
+      tags:
+      - admin
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminUser'
+          description: ''
+    post:
+      operationId: admin_patients_create
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminUser'
+        required: true
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUser'
+          description: ''
+  /api/admin/patients/{id}/:
+    get:
+      operationId: admin_patients_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - admin
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUser'
+          description: ''
+    put:
+      operationId: admin_patients_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminUser'
+        required: true
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUser'
+          description: ''
+    patch:
+      operationId: admin_patients_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAdminUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAdminUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAdminUser'
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUser'
+          description: ''
+    delete:
+      operationId: admin_patients_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - admin
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/admin/verify-doctor/:
+    get:
+      operationId: admin_verify_doctor_list
+      description: ViewSet for administrators to list and review doctor license submissions.
+      tags:
+      - admin
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DoctorVerificationReview'
+          description: ''
+    post:
+      operationId: admin_verify_doctor_create
+      description: ViewSet for administrators to list and review doctor license submissions.
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DoctorVerificationReview'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DoctorVerificationReview'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DoctorVerificationReview'
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoctorVerificationReview'
+          description: ''
+  /api/admin/verify-doctor/{id}/:
+    get:
+      operationId: admin_verify_doctor_retrieve
+      description: ViewSet for administrators to list and review doctor license submissions.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this doctor license.
+        required: true
+      tags:
+      - admin
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoctorVerificationReview'
+          description: ''
+    put:
+      operationId: admin_verify_doctor_update
+      description: ViewSet for administrators to list and review doctor license submissions.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this doctor license.
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DoctorVerificationReview'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DoctorVerificationReview'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DoctorVerificationReview'
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoctorVerificationReview'
+          description: ''
+    patch:
+      operationId: admin_verify_doctor_partial_update
+      description: ViewSet for administrators to list and review doctor license submissions.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this doctor license.
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDoctorVerificationReview'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedDoctorVerificationReview'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedDoctorVerificationReview'
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoctorVerificationReview'
+          description: ''
+    delete:
+      operationId: admin_verify_doctor_destroy
+      description: ViewSet for administrators to list and review doctor license submissions.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this doctor license.
+        required: true
+      tags:
+      - admin
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/auth/google-login/:
+    post:
+      operationId: auth_google_login_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleLogin'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GoogleLogin'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GoogleLogin'
+        required: true
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoogleLogin'
+          description: ''
+  /api/auth/login/:
+    post:
+      operationId: auth_login_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Login'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Login'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Login'
+        required: true
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Login'
+          description: ''
+  /api/auth/logout/:
+    post:
+      operationId: auth_logout_create
+      tags:
+      - auth
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: Logged out successfully
+          description: ''
+  /api/auth/profile/:
+    get:
+      operationId: auth_profile_retrieve
+      tags:
+      - auth
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: auth_profile_partial_update
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/auth/register/:
+    post:
+      operationId: auth_register_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Register'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Register'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Register'
+        required: true
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Register'
+          description: ''
+  /api/auth/token/refresh/:
+    post:
+      operationId: auth_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/auth/verify-otp/:
+    post:
+      operationId: auth_verify_otp_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyOTP'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VerifyOTP'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VerifyOTP'
+        required: true
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyOTP'
+          description: ''
+  /api/doctor/comments/:
+    get:
+      operationId: doctor_comments_list
+      description: API for doctors to add/edit comments on patient reports.
+      tags:
+      - doctor
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DoctorComment'
+          description: ''
+    post:
+      operationId: doctor_comments_create
+      description: API for doctors to add/edit comments on patient reports.
+      tags:
+      - doctor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DoctorComment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DoctorComment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DoctorComment'
+        required: true
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoctorComment'
+          description: ''
+  /api/doctor/comments/{id}/:
+    get:
+      operationId: doctor_comments_retrieve
+      description: API for doctors to add/edit comments on patient reports.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this doctor comment.
+        required: true
+      tags:
+      - doctor
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoctorComment'
+          description: ''
+    put:
+      operationId: doctor_comments_update
+      description: API for doctors to add/edit comments on patient reports.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this doctor comment.
+        required: true
+      tags:
+      - doctor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DoctorComment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DoctorComment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DoctorComment'
+        required: true
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoctorComment'
+          description: ''
+    patch:
+      operationId: doctor_comments_partial_update
+      description: API for doctors to add/edit comments on patient reports.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this doctor comment.
+        required: true
+      tags:
+      - doctor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDoctorComment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedDoctorComment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedDoctorComment'
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoctorComment'
+          description: ''
+    delete:
+      operationId: doctor_comments_destroy
+      description: API for doctors to add/edit comments on patient reports.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this doctor comment.
+        required: true
+      tags:
+      - doctor
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/doctor/link/:
+    post:
+      operationId: doctor_link_create
+      description: API for patients to link themselves to a doctor.
+      tags:
+      - doctor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DoctorPatientLink'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DoctorPatientLink'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DoctorPatientLink'
+        required: true
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoctorPatientLink'
+          description: ''
+  /api/doctor/list/:
+    get:
+      operationId: doctor_list_list
+      tags:
+      - doctor
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DoctorUser'
+          description: ''
+  /api/doctor/my-doctor/:
+    get:
+      operationId: doctor_my_doctor_retrieve
+      description: API for patients to see their currently linked doctor.
+      tags:
+      - doctor
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoctorPatientLink'
+          description: ''
+  /api/doctor/my-patients/:
+    get:
+      operationId: doctor_my_patients_list
+      description: API for doctors to list their linked patients and view their reports.
+      tags:
+      - doctor
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PatientUser'
+          description: ''
+  /api/doctor/my-patients/{id}/:
+    get:
+      operationId: doctor_my_patients_retrieve
+      description: API for doctors to list their linked patients and view their reports.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - doctor
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientUser'
+          description: ''
+  /api/doctor/my-patients/{id}/reports/:
+    get:
+      operationId: doctor_my_patients_reports_retrieve
+      description: API for doctors to list their linked patients and view their reports.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - doctor
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientUser'
+          description: ''
+  /api/doctor/my-patients/{id}/update_notes/:
+    post:
+      operationId: doctor_my_patients_update_notes_create
+      description: API for doctors to list their linked patients and view their reports.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - doctor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatientUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatientUser'
+        required: true
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientUser'
+          description: ''
+  /api/doctor/my-patients/stats/:
+    get:
+      operationId: doctor_my_patients_stats_retrieve
+      description: API for doctors to list their linked patients and view their reports.
+      tags:
+      - doctor
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientUser'
+          description: ''
+  /api/doctor/verify/:
+    get:
+      operationId: doctor_verify_retrieve
+      description: |-
+        API for doctors to upload and view their license status.
+        PUT with: license_number, license_file, and optional supporting_documents files.
+      tags:
+      - doctor
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoctorLicense'
+          description: ''
+    put:
+      operationId: doctor_verify_update
+      description: |-
+        API for doctors to upload and view their license status.
+        PUT with: license_number, license_file, and optional supporting_documents files.
+      tags:
+      - doctor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DoctorLicense'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DoctorLicense'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DoctorLicense'
+        required: true
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoctorLicense'
+          description: ''
+    patch:
+      operationId: doctor_verify_partial_update
+      description: |-
+        API for doctors to upload and view their license status.
+        PUT with: license_number, license_file, and optional supporting_documents files.
+      tags:
+      - doctor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDoctorLicense'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedDoctorLicense'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedDoctorLicense'
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoctorLicense'
+          description: ''
+  /api/reports/:
+    get:
+      operationId: reports_list
+      tags:
+      - reports
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Report'
+          description: ''
+    post:
+      operationId: reports_create
+      tags:
+      - reports
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Report'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Report'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Report'
+        required: true
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+          description: ''
+  /api/reports/{id}/:
+    get:
+      operationId: reports_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this report.
+        required: true
+      tags:
+      - reports
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+          description: ''
+    put:
+      operationId: reports_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this report.
+        required: true
+      tags:
+      - reports
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Report'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Report'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Report'
+        required: true
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+          description: ''
+    patch:
+      operationId: reports_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this report.
+        required: true
+      tags:
+      - reports
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedReport'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedReport'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedReport'
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+          description: ''
+    delete:
+      operationId: reports_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this report.
+        required: true
+      tags:
+      - reports
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/reports/{id}/correct/:
+    put:
+      operationId: reports_correct_update
+      description: |-
+        Endpoint for users to correct the OCR data.
+        Body: { "final_data": { ... } }
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this report.
+        required: true
+      tags:
+      - reports
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ExtractedData'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ExtractedData'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtractedData'
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+          description: ''
+  /api/reports/{id}/ocr/:
+    post:
+      operationId: reports_ocr_create
+      description: Send the report PDF to external OCR service and store extracted
+        data.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this report.
+        required: true
+      tags:
+      - reports
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Report'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Report'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Report'
+        required: true
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+          description: ''
+  /api/reports/{id}/process/:
+    post:
+      operationId: reports_process_create
+      description: Manually trigger OCR processing for a report.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this report.
+        required: true
+      tags:
+      - reports
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Report'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Report'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Report'
+        required: true
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+          description: ''
+  /api/reports/{id}/result/:
+    get:
+      operationId: reports_result_retrieve
+      description: Get the AI-generated result for a report.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this report.
+        required: true
+      tags:
+      - reports
+      security:
+      - JWTCookieAuthentication: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+          description: ''
+components:
+  schemas:
+    AdminCreate:
+      type: object
+      properties:
+        first_name:
+          type: string
+          maxLength: 50
+        last_name:
+          type: string
+          maxLength: 50
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 128
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - email
+      - first_name
+      - last_name
+      - password
+    AdminUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        first_name:
+          type: string
+          maxLength: 50
+        last_name:
+          type: string
+          maxLength: 50
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 128
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        specialization:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/SpecializationEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        is_verified:
+          type: boolean
+        doctor_status:
+          $ref: '#/components/schemas/DoctorStatusEnum'
+        is_staff:
+          type: boolean
+          title: Staff status
+          description: Designates whether the user can log into this admin site.
+        is_superuser:
+          type: boolean
+          title: Superuser status
+          description: Designates that this user has all permissions without explicitly
+            assigning them.
+        is_active:
+          type: boolean
+          title: Active
+          description: Designates whether this user should be treated as active. Unselect
+            this instead of deleting accounts.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        license_info:
+          type: string
+          readOnly: true
+      required:
+      - created_at
+      - email
+      - first_name
+      - id
+      - last_name
+      - license_info
+    BlankEnum:
+      enum:
+      - ''
+    DoctorComment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        report:
+          type: integer
+        doctor:
+          type: integer
+          readOnly: true
+        comment:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - comment
+      - created_at
+      - doctor
+      - id
+      - report
+      - updated_at
+    DoctorLicense:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        license_number:
+          type: string
+          maxLength: 100
+        license_file:
+          type: string
+          format: uri
+        supporting_documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupportingDocument'
+          readOnly: true
+        supporting_documents_upload:
+          type: array
+          items:
+            type: string
+            format: uri
+          writeOnly: true
+          description: Upload multiple verification documents.
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusDcaEnum'
+          readOnly: true
+        rejection_reason:
+          type: string
+          readOnly: true
+          nullable: true
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - id
+      - license_file
+      - license_number
+      - rejection_reason
+      - status
+      - submitted_at
+      - supporting_documents
+      - updated_at
+    DoctorPatientLink:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        patient:
+          allOf:
+          - $ref: '#/components/schemas/PatientUser'
+          readOnly: true
+        doctor:
+          allOf:
+          - $ref: '#/components/schemas/DoctorUser'
+          readOnly: true
+        doctor_id:
+          type: integer
+          writeOnly: true
+        status:
+          $ref: '#/components/schemas/DoctorPatientLinkStatusEnum'
+        notes:
+          type: string
+          nullable: true
+        linked_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - doctor
+      - doctor_id
+      - id
+      - linked_at
+      - patient
+    DoctorPatientLinkStatusEnum:
+      enum:
+      - ONGOING
+      - COMPLETED
+      type: string
+      description: |-
+        * `ONGOING` - Ongoing
+        * `COMPLETED` - Completed
+    DoctorStatusEnum:
+      enum:
+      - UNVERIFIED
+      - PENDING
+      - VERIFIED
+      - REJECTED
+      type: string
+      description: |-
+        * `UNVERIFIED` - Unverified
+        * `PENDING` - Pending
+        * `VERIFIED` - Verified
+        * `REJECTED` - Rejected
+    DoctorUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        first_name:
+          type: string
+          maxLength: 50
+        last_name:
+          type: string
+          maxLength: 50
+      required:
+      - email
+      - first_name
+      - id
+      - last_name
+    DoctorVerificationReview:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        doctor:
+          type: integer
+          readOnly: true
+        doctor_details:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        license_number:
+          type: string
+          readOnly: true
+        license_file:
+          type: string
+          format: uri
+          readOnly: true
+        supporting_documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupportingDocument'
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/StatusDcaEnum'
+        rejection_reason:
+          type: string
+          nullable: true
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - doctor
+      - doctor_details
+      - id
+      - license_file
+      - license_number
+      - submitted_at
+      - supporting_documents
+      - updated_at
+    ExtractedData:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        raw_ocr_data:
+          readOnly: true
+          description: Original data returned by OCR engine
+        final_data:
+          nullable: true
+          description: Editable data for frontend/backend usage
+        is_corrected:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - raw_ocr_data
+      - updated_at
+    GoogleLogin:
+      type: object
+      properties:
+        token:
+          type: string
+          description: Google ID Token received from the frontend.
+      required:
+      - token
+    Login:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          writeOnly: true
+        role:
+          type: string
+      required:
+      - email
+      - password
+      - role
+    NullEnum:
+      enum:
+      - null
+    PatchedAdminUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        first_name:
+          type: string
+          maxLength: 50
+        last_name:
+          type: string
+          maxLength: 50
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 128
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        specialization:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/SpecializationEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        is_verified:
+          type: boolean
+        doctor_status:
+          $ref: '#/components/schemas/DoctorStatusEnum'
+        is_staff:
+          type: boolean
+          title: Staff status
+          description: Designates whether the user can log into this admin site.
+        is_superuser:
+          type: boolean
+          title: Superuser status
+          description: Designates that this user has all permissions without explicitly
+            assigning them.
+        is_active:
+          type: boolean
+          title: Active
+          description: Designates whether this user should be treated as active. Unselect
+            this instead of deleting accounts.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        license_info:
+          type: string
+          readOnly: true
+    PatchedDoctorComment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        report:
+          type: integer
+        doctor:
+          type: integer
+          readOnly: true
+        comment:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedDoctorLicense:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        license_number:
+          type: string
+          maxLength: 100
+        license_file:
+          type: string
+          format: uri
+        supporting_documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupportingDocument'
+          readOnly: true
+        supporting_documents_upload:
+          type: array
+          items:
+            type: string
+            format: uri
+          writeOnly: true
+          description: Upload multiple verification documents.
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusDcaEnum'
+          readOnly: true
+        rejection_reason:
+          type: string
+          readOnly: true
+          nullable: true
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedDoctorVerificationReview:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        doctor:
+          type: integer
+          readOnly: true
+        doctor_details:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        license_number:
+          type: string
+          readOnly: true
+        license_file:
+          type: string
+          format: uri
+          readOnly: true
+        supporting_documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupportingDocument'
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/StatusDcaEnum'
+        rejection_reason:
+          type: string
+          nullable: true
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedReport:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        file:
+          type: string
+          format: uri
+        uploaded_at:
+          type: string
+          format: date-time
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ReportStatusEnum'
+          readOnly: true
+        extracted_data:
+          allOf:
+          - $ref: '#/components/schemas/ExtractedData'
+          readOnly: true
+        result:
+          allOf:
+          - $ref: '#/components/schemas/ReportResult'
+          readOnly: true
+        doctor_comment:
+          type: string
+          readOnly: true
+    PatchedUser:
+      type: object
+      properties:
+        first_name:
+          type: string
+          maxLength: 50
+        last_name:
+          type: string
+          maxLength: 50
+        email:
+          type: string
+          format: email
+          readOnly: true
+          title: Email address
+        phone_number:
+          type: string
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          readOnly: true
+        specialization:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/SpecializationEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        doctor_status:
+          allOf:
+          - $ref: '#/components/schemas/DoctorStatusEnum'
+          readOnly: true
+    PatientUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        first_name:
+          type: string
+          maxLength: 50
+        last_name:
+          type: string
+          maxLength: 50
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 128
+        condition:
+          type: string
+          readOnly: true
+        status:
+          type: string
+          readOnly: true
+        last_visit:
+          type: string
+          format: date-time
+          readOnly: true
+        notes:
+          type: string
+          readOnly: true
+      required:
+      - condition
+      - email
+      - first_name
+      - id
+      - last_name
+      - last_visit
+      - notes
+      - status
+    Register:
+      type: object
+      properties:
+        first_name:
+          type: string
+          maxLength: 50
+        last_name:
+          type: string
+          maxLength: 50
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        phone_number:
+          type: string
+        password:
+          type: string
+          writeOnly: true
+          minLength: 8
+        confirm_password:
+          type: string
+          writeOnly: true
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        specialization:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/SpecializationEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+      required:
+      - confirm_password
+      - email
+      - first_name
+      - last_name
+      - password
+      - phone_number
+    Report:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        file:
+          type: string
+          format: uri
+        uploaded_at:
+          type: string
+          format: date-time
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ReportStatusEnum'
+          readOnly: true
+        extracted_data:
+          allOf:
+          - $ref: '#/components/schemas/ExtractedData'
+          readOnly: true
+        result:
+          allOf:
+          - $ref: '#/components/schemas/ReportResult'
+          readOnly: true
+        doctor_comment:
+          type: string
+          readOnly: true
+      required:
+      - doctor_comment
+      - extracted_data
+      - file
+      - id
+      - result
+      - status
+      - uploaded_at
+    ReportResult:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        summary:
+          type: string
+          description: AI generated summary for the patient
+        doctor_summary:
+          type: string
+          nullable: true
+          description: AI generated summary for the doctor
+        key_findings:
+          description: List of key findings
+        conditions:
+          description: List of detected conditions
+        risk_level:
+          $ref: '#/components/schemas/RiskLevelEnum'
+        confidence_score:
+          type: number
+          format: double
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - conditions
+      - created_at
+      - id
+      - key_findings
+      - risk_level
+      - summary
+    ReportStatusEnum:
+      enum:
+      - PENDING
+      - PROCESSED
+      - FAILED
+      type: string
+      description: |-
+        * `PENDING` - Pending
+        * `PROCESSED` - Processed
+        * `FAILED` - Failed
+    RiskLevelEnum:
+      enum:
+      - Low
+      - Medium
+      - High
+      type: string
+      description: |-
+        * `Low` - Low
+        * `Medium` - Medium
+        * `High` - High
+    RoleEnum:
+      enum:
+      - DOCTOR
+      - PATIENT
+      - ADMIN
+      type: string
+      description: |-
+        * `DOCTOR` - Doctor
+        * `PATIENT` - Patient
+        * `ADMIN` - Admin
+    SpecializationEnum:
+      enum:
+      - GENERAL_PHYSICIAN
+      - CARDIOLOGIST
+      - DERMATOLOGIST
+      - NEUROLOGIST
+      - ORTHOPEDIC
+      - PEDIATRICIAN
+      - OTHER
+      type: string
+      description: |-
+        * `GENERAL_PHYSICIAN` - General Physician
+        * `CARDIOLOGIST` - Cardiologist
+        * `DERMATOLOGIST` - Dermatologist
+        * `NEUROLOGIST` - Neurologist
+        * `ORTHOPEDIC` - Orthopedic
+        * `PEDIATRICIAN` - Pediatrician
+        * `OTHER` - Other
+    StatusDcaEnum:
+      enum:
+      - PENDING
+      - APPROVED
+      - REJECTED
+      type: string
+      description: |-
+        * `PENDING` - Pending
+        * `APPROVED` - Approved
+        * `REJECTED` - Rejected
+    SupportingDocument:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        file:
+          type: string
+          format: uri
+        uploaded_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - file
+      - id
+      - uploaded_at
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          writeOnly: true
+      required:
+      - access
+      - refresh
+    TypeEnum:
+      enum:
+      - register
+      - login
+      type: string
+      description: |-
+        * `register` - register
+        * `login` - login
+    User:
+      type: object
+      properties:
+        first_name:
+          type: string
+          maxLength: 50
+        last_name:
+          type: string
+          maxLength: 50
+        email:
+          type: string
+          format: email
+          readOnly: true
+          title: Email address
+        phone_number:
+          type: string
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          readOnly: true
+        specialization:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/SpecializationEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        doctor_status:
+          allOf:
+          - $ref: '#/components/schemas/DoctorStatusEnum'
+          readOnly: true
+      required:
+      - doctor_status
+      - email
+      - first_name
+      - last_name
+      - phone_number
+      - role
+    VerifyOTP:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        otp:
+          type: string
+          maxLength: 6
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+      required:
+      - email
+      - otp
+      - type
+  securitySchemes:
+    JWTCookieAuthentication:
+      type: apiKey
+      in: cookie
+      name: access
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

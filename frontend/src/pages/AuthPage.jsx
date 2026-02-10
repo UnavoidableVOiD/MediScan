@@ -11,7 +11,7 @@ const AuthPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const dispatch = useDispatch();
-    const { loading, isVerifying } = useSelector(state => state.auth);
+    const { loading, isVerifying, isAuthenticated, user } = useSelector(state => state.auth);
 
     // Determine if we start on signup or login from URL
     const isInitialSignup = location.pathname.includes('signup');
@@ -19,12 +19,23 @@ const AuthPage = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [role, setRole] = useState('patient');
 
-    // Effect to handle redirection if verification is triggered
+    // Effect to handle redirection
     React.useEffect(() => {
         if (isVerifying) {
             navigate('/verify-otp');
+            return;
         }
-    }, [isVerifying, navigate]);
+
+        if (isAuthenticated && user) {
+            if (user.role === 'ADMIN' || user.is_superuser) {
+                navigate('/admin/dashboard');
+            } else if (user.role === 'DOCTOR') {
+                navigate('/doctor-dashboard');
+            } else {
+                navigate('/dashboard');
+            }
+        }
+    }, [isVerifying, isAuthenticated, user, navigate]);
 
     const [formData, setFormData] = useState({
         firstName: '',
@@ -32,7 +43,8 @@ const AuthPage = () => {
         email: '',
         phone: '',
         password: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        specialization: ''
     });
 
     const handleChange = (e) => {
@@ -60,8 +72,9 @@ const AuthPage = () => {
                 email: formData.email,
                 phone_number: formData.phone,
                 password: formData.password,
-                confirm_password: formData.confirmPassword, // Added this field
-                role: role.toUpperCase() // Backend expects uppercase ROLE
+                confirm_password: formData.confirmPassword,
+                role: role.toUpperCase(),
+                specialization: role === 'doctor' ? formData.specialization : null
             };
             dispatch(registerUser(signupData));
         }
@@ -70,7 +83,16 @@ const AuthPage = () => {
     const handleGoogleLoginSuccess = (tokenResponse) => {
         dispatch(googleLogin(tokenResponse.access_token))
             .unwrap()
-            .then(() => navigate('/dashboard'));
+            .then((response) => {
+                const userRole = response.user.role;
+                if (userRole === 'ADMIN') {
+                    navigate('/admin/dashboard');
+                } else if (userRole === 'DOCTOR') {
+                    navigate('/doctor-dashboard');
+                } else {
+                    navigate('/dashboard');
+                }
+            });
     };
 
     const loginWithGoogle = useGoogleLogin({
@@ -263,6 +285,40 @@ const AuthPage = () => {
                                 </div>
                             </div>
                         )}
+
+                        <AnimatePresence mode="wait">
+                            {!isLogin && role === 'doctor' && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className="space-y-1.5 overflow-hidden"
+                                >
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Specialization</label>
+                                    <div className="relative">
+                                        <select
+                                            name="specialization"
+                                            required={!isLogin && role === 'doctor'}
+                                            value={formData.specialization}
+                                            onChange={handleChange}
+                                            className="w-full px-4 py-3 bg-neutral-soft border-transparent focus:border-medic-dark focus:bg-white rounded-xl text-sm transition-all focus:ring-4 focus:ring-medic-dark/5 outline-none appearance-none cursor-pointer"
+                                        >
+                                            <option value="">Select Specialization</option>
+                                            <option value="GENERAL_PHYSICIAN">General Physician</option>
+                                            <option value="CARDIOLOGIST">Cardiologist</option>
+                                            <option value="DERMATOLOGIST">Dermatologist</option>
+                                            <option value="NEUROLOGIST">Neurologist</option>
+                                            <option value="ORTHOPEDIC">Orthopedic</option>
+                                            <option value="PEDIATRICIAN">Pediatrician</option>
+                                            <option value="OTHER">Other</option>
+                                        </select>
+                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                            <ArrowRight className="w-4 h-4 rotate-90" />
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
 
                         <div className="space-y-3">
                             <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Role Selection</label>
