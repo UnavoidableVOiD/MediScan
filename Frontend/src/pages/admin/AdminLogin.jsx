@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { ShieldCheck, Lock, Mail, ArrowRight } from 'lucide-react';
-import { toast } from 'react-toastify';
-import { adminApi } from '../../services/api';
 import { setCredentials } from '../../store/slices/authSlice';
+import { adminLogin } from '../../store/slices/adminSlice';
 
 const AdminLogin = () => {
     const navigate = useNavigate();
@@ -23,20 +22,17 @@ const AdminLogin = () => {
         e.preventDefault();
         setLoading(true);
         try {
-            const response = await adminApi.login(formData);
+            const result = await dispatch(adminLogin(formData)).unwrap();
             dispatch(setCredentials({
-                user: response.data.user,
+                user: result.user,
                 token: null // Handled by cookie
             }));
 
-            if (response.data.user.role === 'ADMIN' || response.data.user.is_superuser) {
-                toast.success("Welcome back, Admin!");
+            if (result.user.role === 'ADMIN' || result.user.is_superuser) {
                 navigate('/admin/dashboard');
-            } else {
-                toast.error("Unauthorized access.");
             }
         } catch (error) {
-            toast.error(error.response?.data?.error || "Login failed");
+            // toast handled by slice
         } finally {
             setLoading(false);
         }

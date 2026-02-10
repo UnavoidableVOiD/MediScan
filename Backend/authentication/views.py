@@ -152,6 +152,7 @@ class LoginView(views.APIView):
 class LogoutView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(request=None, responses={200: {"description": "Logged out successfully"}})
     def post(self, request):
         response = Response({"success": True, "message": "Logged out."}, status=status.HTTP_200_OK)
         response.delete_cookie('access', path='/')

@@ -19,6 +19,7 @@ class ReportViewSet(viewsets.ModelViewSet):
     serializer_class = ReportSerializer
     permission_classes = [permissions.IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
+    queryset = Report.objects.none()
 
     def get_queryset(self):
         return Report.objects.filter(user=self.request.user).order_by('-uploaded_at')

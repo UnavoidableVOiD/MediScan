@@ -63,10 +63,11 @@ class RegisterSerializer(serializers.ModelSerializer):
             valid_specializations = [c[0] for c in User.SPECIALIZATION_CHOICES]
             if specialization.upper() not in valid_specializations:
                 raise serializers.ValidationError({"specialization": f"Invalid specialization. Choices are: {', '.join(valid_specializations)}"})
-        elif specialization:
-             # If role is PATIENT, specialization is not required and should probably be null, 
-             # but we'll just allow it if provided for now, or clear it.
-             pass
+            # Ensure it is stored in uppercase as per choices
+            data['specialization'] = specialization.upper()
+        else:
+            # For PATIENTS, we don't require specialization
+            data['specialization'] = None
 
         return data
 
@@ -156,5 +157,5 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'phone_number', 'role', 'specialization']
-        read_only_fields = ['email', 'role']
+        fields = ['first_name', 'last_name', 'email', 'phone_number', 'role', 'specialization', 'doctor_status', 'consultation_fee']
+        read_only_fields = ['email', 'role', 'doctor_status']

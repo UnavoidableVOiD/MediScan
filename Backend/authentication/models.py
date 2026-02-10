@@ -24,7 +24,7 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
-        extra_fields.setdefault('role', 'DOCTOR')
+        extra_fields.setdefault('role', 'ADMIN')
 
         if extra_fields.get('is_staff') is not True:
             raise ValueError(_('Superuser must have is_staff=True.'))
@@ -37,15 +37,28 @@ class CustomUser(AbstractUser):
     ROLE_CHOICES = (
         ('DOCTOR', 'Doctor'),
         ('PATIENT', 'Patient'),
+        ('ADMIN', 'Admin'),
+    )
+
+    STATUS_UNVERIFIED = 'UNVERIFIED'
+    STATUS_PENDING = 'PENDING'
+    STATUS_VERIFIED = 'VERIFIED'
+    STATUS_REJECTED = 'REJECTED'
+
+    DOCTOR_STATUS_CHOICES = (
+        (STATUS_UNVERIFIED, 'Unverified'),
+        (STATUS_PENDING, 'Pending'),
+        (STATUS_VERIFIED, 'Verified'),
+        (STATUS_REJECTED, 'Rejected'),
     )
 
     SPECIALIZATION_CHOICES = (
-        ('CARDIOLOGY', 'Cardiology'),
-        ('DERMATOLOGY', 'Dermatology'),
-        ('NEUROLOGY', 'Neurology'),
-        ('PEDIATRICS', 'Pediatrics'),
-        ('ORTHOPEDICS', 'Orthopedics'),
-        ('GENERAL_PRACTICE', 'General Practice'),
+        ('GENERAL_PHYSICIAN', 'General Physician'),
+        ('CARDIOLOGIST', 'Cardiologist'),
+        ('DERMATOLOGIST', 'Dermatologist'),
+        ('NEUROLOGIST', 'Neurologist'),
+        ('ORTHOPEDIC', 'Orthopedic'),
+        ('PEDIATRICIAN', 'Pediatrician'),
         ('OTHER', 'Other'),
     )
 
@@ -64,9 +77,21 @@ class CustomUser(AbstractUser):
     )
     
     is_verified = models.BooleanField(default=False)
-    is_doctor_verified = models.BooleanField(default=False)
+    doctor_status = models.CharField(
+        max_length=20, 
+        choices=DOCTOR_STATUS_CHOICES, 
+        default=STATUS_UNVERIFIED
+    )
     failed_login_attempts = models.IntegerField(default=0)
     account_locked_until = models.DateTimeField(null=True, blank=True)
+    
+    # Pricing & Professional Info
+    consultation_fee = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        default=0.00,
+        help_text=_("Consultation fee per appointment")
+    )
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

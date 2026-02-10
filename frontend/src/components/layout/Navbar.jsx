@@ -18,13 +18,45 @@ const Navbar = () => {
         setIsOpen(false);
     };
 
+    const isUnverifiedDoctor = user?.role === 'DOCTOR' && user?.doctor_status === 'UNVERIFIED';
+    const isPendingDoctor = user?.role === 'DOCTOR' && user?.doctor_status === 'PENDING';
+    const isVerifiedDoctor = user?.role === 'DOCTOR' && user?.doctor_status === 'VERIFIED';
+    const isRestrictedDoctor = !isVerifiedDoctor && user?.role === 'DOCTOR';
+
     const navLinks = [
         { name: 'Home', path: '/', show: !isAuthenticated },
-        { name: 'Dashboard', path: '/dashboard', show: isAuthenticated },
-        { name: 'Check Reports', path: '/check-reports', show: isAuthenticated && user?.role?.toLowerCase() === 'patient' },
-        { name: 'About', path: '/about', show: true },
-        { name: 'Contact', path: '/contact', show: true },
-        { name: 'Services', path: '/services', show: true },
+        {
+            name: user?.role === 'ADMIN' ? 'Admin Portal' : 'Dashboard',
+            path: user?.role === 'ADMIN' ? '/admin/dashboard' : (user?.role === 'DOCTOR' ? '/doctor-dashboard' : '/dashboard'),
+            show: isAuthenticated,
+            disabled: isRestrictedDoctor
+        },
+        {
+            name: 'Appointments',
+            path: '/appointments',
+            show: isAuthenticated && user?.role === 'DOCTOR',
+            disabled: isRestrictedDoctor
+        },
+        {
+            name: 'Patients',
+            path: '/patients',
+            show: isAuthenticated && user?.role === 'DOCTOR',
+            disabled: isRestrictedDoctor
+        },
+        // {
+        //     name: 'Reports',
+        //     path: '/doctor-reports',
+        //     show: isAuthenticated && user?.role === 'DOCTOR',
+        //     disabled: isRestrictedDoctor
+        // },
+        {
+            name: 'Check Reports',
+            path: '/check-reports',
+            show: isAuthenticated && user?.role === 'PATIENT'
+        },
+        { name: 'About', path: '/about', show: user?.role !== 'ADMIN' },
+        { name: 'Contact', path: '/contact', show: user?.role !== 'ADMIN' },
+        { name: 'Services', path: '/services', show: user?.role !== 'ADMIN' },
     ];
 
     const toggleMenu = () => setIsOpen(!isOpen);
@@ -43,13 +75,25 @@ const Navbar = () => {
                 {/* Desktop Links */}
                 <div className="hidden md:flex items-center gap-8 text-gray-600 font-medium">
                     {navLinks.filter(link => link.show).map((link) => (
-                        <Link
-                            key={link.path}
-                            to={link.path}
-                            className={location.pathname === link.path ? activeLinkClass : inactiveLinkClass}
-                        >
-                            {link.name}
-                        </Link>
+                        link.disabled ? (
+                            <div key={link.path} className="relative group cursor-not-allowed">
+                                <span className="text-gray-400">
+                                    {link.name}
+                                </span>
+                                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-1 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-[60]">
+                                    {isPendingDoctor ? "Access will be available after verification approval" : "Verify your profile first to get access"}
+                                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-800" />
+                                </div>
+                            </div>
+                        ) : (
+                            <Link
+                                key={link.path}
+                                to={link.path}
+                                className={location.pathname === link.path ? activeLinkClass : inactiveLinkClass}
+                            >
+                                {link.name}
+                            </Link>
+                        )
                     ))}
                 </div>
 
@@ -117,17 +161,29 @@ const Navbar = () => {
                         >
                             <div className="p-6 flex flex-col gap-4 max-h-[80vh] overflow-y-auto">
                                 {navLinks.filter(link => link.show).map((link) => (
-                                    <Link
-                                        key={link.name}
-                                        to={link.path}
-                                        onClick={() => setIsOpen(false)}
-                                        className={`text-lg font-bold py-3 px-4 rounded-xl transition-all ${location.pathname === link.path
+                                    link.disabled ? (
+                                        <div
+                                            key={link.name}
+                                            className="text-lg font-bold py-3 px-4 rounded-xl text-gray-400 bg-gray-50/50 flex flex-col gap-1"
+                                        >
+                                            <span>{link.name}</span>
+                                            <span className="text-[10px] text-orange-500 uppercase tracking-widest leading-none">
+                                                {isPendingDoctor ? "Approval Pending" : "Verification Required"}
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <Link
+                                            key={link.name}
+                                            to={link.path}
+                                            onClick={() => setIsOpen(false)}
+                                            className={`text-lg font-bold py-3 px-4 rounded-xl transition-all ${location.pathname === link.path
                                                 ? 'bg-medic-light/30 text-medic-dark'
                                                 : 'text-gray-600 hover:bg-neutral-soft'
-                                            }`}
-                                    >
-                                        {link.name}
-                                    </Link>
+                                                }`}
+                                        >
+                                            {link.name}
+                                        </Link>
+                                    )
                                 ))}
 
                                 <hr className="border-gray-100 my-2" />

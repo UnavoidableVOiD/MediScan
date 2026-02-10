@@ -18,6 +18,7 @@ import {
 
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchReports, deleteReport, setCurrentReport } from '../store/slices/reportsSlice';
+import { fetchAppointments } from '../store/slices/appointmentSlice';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
@@ -28,9 +29,11 @@ const PatientDashboard = () => {
 
     const { user } = useSelector(state => state.auth);
     const { reports, loading } = useSelector(state => state.reports);
+    const { appointments, loading: appointmentsLoading } = useSelector(state => state.appointment);
 
     useEffect(() => {
         dispatch(fetchReports());
+        dispatch(fetchAppointments());
     }, [dispatch]);
 
     const stats = [
@@ -117,6 +120,54 @@ const PatientDashboard = () => {
                 ))}
             </div>
 
+            {/* Appointments Section */}
+            <section className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                <div className="lg:col-span-2 space-y-6">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-2xl font-bold text-gray-900">Upcoming Appointments</h2>
+                        <Link to="/doctors" className="text-medic-dark font-bold text-sm hover:underline">Find a Doctor</Link>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {appointmentsLoading ? (
+                            <div className="col-span-2 py-10 flex justify-center"><Loader2 className="animate-spin text-medic-dark" /></div>
+                        ) : appointments.filter(a => a.status === 'PAID').length > 0 ? (
+                            appointments.filter(a => a.status === 'PAID').slice(0, 2).map((appt) => (
+                                <div key={appt.id} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-start gap-4">
+                                    <div className="w-12 h-12 bg-medic-light/30 rounded-2xl flex items-center justify-center text-medic-dark">
+                                        <Calendar className="w-6 h-6" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <h4 className="font-bold text-gray-900">Dr. {appt.doctor_full_name}</h4>
+                                        <div className="flex items-center gap-2 text-xs text-gray-400 font-bold">
+                                            <Clock className="w-3.5 h-3.5" /> {appt.appointment_date} @ {appt.start_time.slice(0, 5)}
+                                        </div>
+                                        <span className="inline-block px-2 py-0.5 bg-green-50 text-green-600 text-[10px] font-bold rounded-full">Confirmed</span>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="col-span-2 p-10 bg-neutral-soft/30 rounded-3xl border border-dashed border-gray-200 text-center">
+                                <p className="text-gray-400 font-medium italic">No upcoming appointments.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="bg-medic-accent/10 rounded-[2rem] p-8 space-y-6 border border-medic-accent/20">
+                    <div className="w-12 h-12 bg-medic-accent/20 rounded-2xl flex items-center justify-center text-medic-dark">
+                        <Activity className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900">AI Health Tip</h3>
+                    <p className="text-sm text-gray-600 leading-relaxed font-medium">
+                        "Regular check-ups are the best way to catch health issues early. Your next cardiovascular screening is due in 3 months."
+                    </p>
+                    <button className="w-full py-3 bg-medic-dark text-white rounded-xl font-bold hover:bg-medic-primary transition-all shadow-lg shadow-medic-dark/10">
+                        View Recommendations
+                    </button>
+                </div>
+            </section>
+
             {/* Reports List */}
             <section className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
                 <div className="p-8 border-b border-gray-50 flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -160,7 +211,7 @@ const PatientDashboard = () => {
                                                 <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 group-hover:bg-medic-light transition-colors group-hover:text-medic-dark">
                                                     <FileText className="w-5 h-5" />
                                                 </div>
-                                                <span className="font-bold text-gray-900">{report.file.split('/').pop()}</span>
+                                                <span className="font-bold text-gray-900">{report.file?.split('/').pop() || 'Medical Report'}</span>
                                             </div>
                                         </td>
                                         <td className="px-8 py-5 text-sm text-gray-500">{formatDate(report.uploaded_at)}</td>

@@ -4,7 +4,7 @@ from .models import Report, ExtractedReportData, ReportResult
 class ReportResultSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReportResult
-        fields = ['id', 'summary', 'doctor_summary', 'key_findings', 'conditions', 'risk_level', 'confidence_score', 'created_at']
+        fields = ['id', 'summary', 'doctor_summary', 'key_findings', 'conditions', 'risk_level', 'confidence_score', 'suggested_specialization', 'created_at']
 
 class ExtractedDataSerializer(serializers.ModelSerializer):
     class Meta:

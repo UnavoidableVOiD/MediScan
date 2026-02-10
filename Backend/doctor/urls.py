@@ -6,12 +6,16 @@ from .views import (
     LinkDoctorView, 
     MyPatientsViewSet, 
     DoctorCommentViewSet,
-    DoctorLicenseView
+    DoctorLicenseView,
+    DoctorAvailabilityViewSet,
+    AppointmentViewSet
 )
 
 router = DefaultRouter()
 router.register(r'my-patients', MyPatientsViewSet, basename='my-patients')
 router.register(r'comments', DoctorCommentViewSet, basename='doctor-comments')
+router.register(r'availability', DoctorAvailabilityViewSet, basename='doctor-availability')
+router.register(r'appointments', AppointmentViewSet, basename='appointments')
 
 urlpatterns = [
     path('', include(router.urls)),
