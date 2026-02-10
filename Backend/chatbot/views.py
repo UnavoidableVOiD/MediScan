@@ -15,7 +15,7 @@ class ChatStreamView(APIView):
         if not question:
             return Response({"error": "Question is required"}, status=400)
 
-        ml_service_url = getattr(settings, 'ML_SERVICE_URL', 'http://127.0.0.1:8001')
+        ml_service_url = getattr(settings, 'ML_SERVICE_URL', 'http://127.0.0.1:8001') or 'http://127.0.0.1:8001'
         chat_stream_url = f"{ml_service_url}/chat_stream"
 
         payload = {
@@ -29,12 +29,15 @@ class ChatStreamView(APIView):
                 try:
                     async with client.stream("POST", chat_stream_url, json=payload) as response:
                         if response.status_code != 200:
-                            yield f"Error from AI Service: {response.status_code}"
+                            yield b"Error from AI Service: " + str(response.status_code).encode()
                             return
                             
-                        async for chunk in response.aiter_text():
+                        async for chunk in response.aiter_bytes():
                             yield chunk
                 except Exception as e:
-                    yield f"Error connecting to AI Service: {str(e)}"
+                    yield f"Error connecting to AI Service: {str(e)}".encode()
 
-        return StreamingHttpResponse(stream_generator(), content_type="text/plain")
+        response = StreamingHttpResponse(stream_generator(), content_type="text/plain")
+        response['X-Accel-Buffering'] = 'no'  # Disable Nginx buffering
+        response['Cache-Control'] = 'no-cache'
+        return response

@@ -182,9 +182,9 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CORS_ALLOW_CREDENTIALS = True
 
-ML_SERVICE_URL = os.getenv('ML_SERVICE_URL', 'http://127.0.0.1:8001')
+ML_SERVICE_URL = os.getenv('ML_SERVICE_URL') or 'http://127.0.0.1:8001'
 OCR_API_URL = f"{ML_SERVICE_URL}/extract_from_pdf"
-ANALYSIS_API_URL = os.getenv('ANALYSIS_API_URL', f"{ML_SERVICE_URL}/analyze_verified_data")
+ANALYSIS_API_URL = os.getenv('ANALYSIS_API_URL') or f"{ML_SERVICE_URL}/analyze_verified_data"
 
 # Khalti Payment Gateway
 KHALTI_PUBLIC_KEY = os.getenv('KHALTI_PUBLIC_KEY')
