@@ -1,6 +1,18 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import api from '../../services/api';
+import api, { authApi } from '../../services/api';
 import { toast } from 'react-toastify';
+
+export const submitVerification = createAsyncThunk(
+    'auth/submitVerification',
+    async (formData, { rejectWithValue }) => {
+        try {
+            const response = await authApi.submitDoctorVerification(formData);
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response.data);
+        }
+    }
+);
 
 const initialState = {
     user: null,
@@ -102,6 +114,11 @@ const authSlice = createSlice({
     name: 'auth',
     initialState,
     reducers: {
+        setCredentials: (state, action) => {
+            const { user } = action.payload;
+            state.user = user;
+            state.isAuthenticated = true;
+        },
         setTempEmail: (state, action) => {
             state.tempEmail = action.payload;
             state.isVerifying = true;
@@ -202,6 +219,23 @@ const authSlice = createSlice({
                 state.user = null;
                 state.isAuthenticated = false;
             })
+            // Submit Verification
+            .addCase(submitVerification.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(submitVerification.fulfilled, (state, action) => {
+                state.loading = false;
+                if (state.user) {
+                    state.user.doctor_status = 'PENDING';
+                }
+                toast.success(action.payload.message || "Documents submitted successfully! Your profile is now under review.");
+            })
+            .addCase(submitVerification.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+                toast.error(action.payload?.message || action.payload?.error || "Submission failed");
+            })
             // Update Profile
             .addCase(updateProfile.pending, (state) => {
                 state.loading = true;
@@ -252,5 +286,5 @@ const authSlice = createSlice({
     },
 });
 
-export const { setTempEmail, clearVerification, resetError } = authSlice.actions;
+export const { setTempEmail, clearVerification, resetError, setCredentials } = authSlice.actions;
 export default authSlice.reducer;
