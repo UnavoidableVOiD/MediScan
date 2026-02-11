@@ -106,7 +106,7 @@ class MedicalChatbot:
         USER QUESTION: {question}
 
         INSTRUCTIONS:
-        If the user says "Hello", "Hi", or "Hey", introduce yourself as MediScan AI.
+        1. If the user says "Hello", "Hi", or "Hey", introduce yourself as MediScan AI.
         2. Base your answer strictly on the MEDICAL GUIDELINES and PATIENT REPORT DATA.
         3. If the patient's data shows abnormal values, explicitily mention them.
         4. Be concise and professional.
