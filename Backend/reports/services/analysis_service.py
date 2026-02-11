@@ -80,7 +80,7 @@ class AnalysisService:
                     "conditions": conditions,
                     "risk_level": risk_level,
                     "confidence_score": 95.0,
-                    "suggested_specialization": self._get_suggested_specialty(conditions)
+                    "suggested_specialization": AnalysisService._get_suggested_specialty(conditions)
                 }
             )
             return True, result_obj

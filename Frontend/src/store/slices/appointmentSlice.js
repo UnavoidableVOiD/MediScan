@@ -67,6 +67,7 @@ const initialState = {
     availability: [],
     recommendedDoctors: [],
     loading: false,
+    availabilityLoading: false,
     recommendedLoading: false,
     bookingLoading: false,
     verifyingLoading: false,
@@ -94,6 +95,19 @@ const appointmentSlice = createSlice({
             })
             .addCase(fetchAppointments.rejected, (state, action) => {
                 state.loading = false;
+                state.error = action.payload;
+            })
+            // Availability
+            .addCase(fetchAvailability.pending, (state) => {
+                state.availabilityLoading = true;
+                state.error = null;
+            })
+            .addCase(fetchAvailability.fulfilled, (state, action) => {
+                state.availabilityLoading = false;
+                state.availability = action.payload;
+            })
+            .addCase(fetchAvailability.rejected, (state, action) => {
+                state.availabilityLoading = false;
                 state.error = action.payload;
             })
             // Recommended Doctors

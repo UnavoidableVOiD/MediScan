@@ -53,13 +53,11 @@ class CustomUser(AbstractUser):
     )
 
     SPECIALIZATION_CHOICES = (
-        ('GENERAL_PHYSICIAN', 'General Physician'),
-        ('CARDIOLOGIST', 'Cardiologist'),
-        ('DERMATOLOGIST', 'Dermatologist'),
-        ('NEUROLOGIST', 'Neurologist'),
-        ('ORTHOPEDIC', 'Orthopedic'),
-        ('PEDIATRICIAN', 'Pediatrician'),
-        ('OTHER', 'Other'),
+        ('CARDIOLOGIST', 'Cardiologist (Heart)'),
+        ('ENDOCRINOLOGIST', 'Endocrinologist (Diabetes & Thyroid)'),
+        ('NEPHROLOGIST', 'Nephrologist (Kidney)'),
+        ('HEPATOLOGIST', 'Hepatologist (Liver)'),
+        ('HEMATOLOGIST', 'Hematologist (Anemia)'),
     )
 
     username = None  # Disable username field

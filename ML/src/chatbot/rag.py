@@ -84,9 +84,29 @@ class MedicalChatbot:
 
         patient_context_str = "No specific patient report uploaded."
         if patient_data and isinstance(patient_data, dict):
-            patient_context_str = "CURRENT PATIENT REPORT VALUES:\n"
-            for key, val in patient_data.items():
-                patient_context_str += f"- {key}: {val}\n"
+            patient_context_str = "## CURRENT PATIENT REPORT SUMMARY ##\n"
+            
+            # 1. Handle Lab Values
+            lab_values = patient_data.get('lab_values', {})
+            if lab_values:
+                patient_context_str += "\n### LABORATORY VALUES:\n"
+                for key, val in lab_values.items():
+                    patient_context_str += f"- {key}: {val}\n"
+            
+            # 2. Handle AI Analysis Results
+            analysis = patient_data.get('analysis', {})
+            if analysis:
+                patient_context_str += "\n### AI ANALYSIS FINDINGS:\n"
+                patient_context_str += f"- RISK LEVEL: {analysis.get('risk_level', 'N/A')}\n"
+                patient_context_str += f"- SUGGESTED SPECIALIZATION: {analysis.get('specialization', 'N/A')}\n"
+                
+                conditions = analysis.get('conditions', [])
+                if conditions:
+                    patient_context_str += f"- DETECTED CONDITIONS: {', '.join(conditions)}\n"
+                
+                summary = analysis.get('summary', '')
+                if summary:
+                    patient_context_str += f"- CLINICAL SUMMARY: {summary}\n"
         
         return context_text, patient_context_str
 
@@ -108,9 +128,10 @@ class MedicalChatbot:
         INSTRUCTIONS:
         1. If the user says "Hello", "Hi", or "Hey", introduce yourself as MediScan AI.
         2. Base your answer strictly on the MEDICAL GUIDELINES and PATIENT REPORT DATA.
-        3. If the patient's data shows abnormal values, explicitily mention them.
-        4. Be concise and professional.
-        5. DISCLAIMER: Never give a definitive diagnosis. Always say "This suggests..." or "Consult a doctor."
+        3. ALWAYS reference the specific Lab Values or AI Analysis Findings if relevant to the question.
+        4. If the patient's data shows high-risk levels or abnormal findings (as listed in AI Analysis), explicitly mention them.
+        5. Be concise, professional, and empathetic.
+        6. DISCLAIMER: Never give a definitive diagnosis. Always say "This suggests..." or "Consult a doctor for professional clinical advice."
 
         ANSWER:
         """)

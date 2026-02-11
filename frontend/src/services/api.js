@@ -25,6 +25,7 @@ export const doctorApi = {
     getPatients: () => api.get('/doctor/my-patients/'),
     getPatientReports: (id) => api.get(`/doctor/my-patients/${id}/reports/`),
     updatePatientNotes: (id, notes) => api.post(`/doctor/my-patients/${id}/update_notes/`, { notes }),
+    addComment: (data) => api.post('/doctor/comments/', data),
 };
 
 export const appointmentApi = {

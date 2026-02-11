@@ -52,6 +52,18 @@ export const updatePatientNotes = createAsyncThunk(
     }
 );
 
+export const submitDoctorComment = createAsyncThunk(
+    'doctor/submitComment',
+    async (data, { rejectWithValue }) => {
+        try {
+            const response = await doctorApi.addComment(data);
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || 'Failed to submit comment');
+        }
+    }
+);
+
 // --- Slice ---
 
 const initialState = {
@@ -62,6 +74,7 @@ const initialState = {
     statsLoading: false,
     reportsLoading: false,
     notesLoading: false,
+    commentLoading: false,
     error: null,
 };
 
@@ -128,6 +141,23 @@ const doctorSlice = createSlice({
             .addCase(updatePatientNotes.rejected, (state, action) => {
                 state.notesLoading = false;
                 toast.error(action.payload?.error || "Failed to save notes");
+            })
+            // Submit Comment
+            .addCase(submitDoctorComment.pending, (state) => {
+                state.commentLoading = true;
+            })
+            .addCase(submitDoctorComment.fulfilled, (state, action) => {
+                state.commentLoading = false;
+                toast.success("Comment submitted successfully");
+                // Update the report in currentPatientReports if it's there
+                const reportIndex = state.currentPatientReports.findIndex(r => r.id === action.payload.report);
+                if (reportIndex !== -1) {
+                    state.currentPatientReports[reportIndex].doctor_comment = action.payload;
+                }
+            })
+            .addCase(submitDoctorComment.rejected, (state, action) => {
+                state.commentLoading = false;
+                toast.error(action.payload?.error || "Failed to submit comment");
             });
     },
 });

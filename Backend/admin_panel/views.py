@@ -101,13 +101,13 @@ class AdminDoctorListView(viewsets.ModelViewSet):
         if status_param:
             # Map frontend status (tab name) to backend doctor_status
             status_map = {
-                'pending': 'PENDING',
-                'verified': 'VERIFIED',
-                'rejected': 'REJECTED'
+                'pending': ['PENDING', 'UNVERIFIED'],
+                'verified': ['VERIFIED'],
+                'rejected': ['REJECTED']
             }
             backend_status = status_map.get(status_param.lower())
             if backend_status:
-                queryset = queryset.filter(doctor_status=backend_status)
+                queryset = queryset.filter(doctor_status__in=backend_status)
         return queryset
 
     @action(detail=True, methods=['post'])

@@ -62,7 +62,7 @@ class MyPatientsViewSet(viewsets.ReadOnlyModelViewSet):
     API for doctors to list their linked patients and view their reports.
     """
     serializer_class = PatientUserSerializer
-    permission_classes = [IsDoctor]
+    permission_classes = [IsDoctorRole]
     queryset = User.objects.filter(role='PATIENT')
 
     def get_queryset(self):
@@ -119,13 +119,22 @@ class MyPatientsViewSet(viewsets.ReadOnlyModelViewSet):
 class DoctorCommentViewSet(viewsets.ModelViewSet):
     """
     API for doctors to add/edit comments on patient reports.
+    Patients can read comments on their own reports.
     """
     serializer_class = DoctorCommentSerializer
-    permission_classes = [IsDoctor]
     queryset = DoctorComment.objects.all()
 
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [permissions.IsAuthenticated()]
+        return [IsDoctor()]
+
     def get_queryset(self):
-        return DoctorComment.objects.filter(doctor=self.request.user)
+        user = self.request.user
+        if user.role == 'DOCTOR':
+            return DoctorComment.objects.filter(doctor=user)
+        # Patients only see comments on their own reports
+        return DoctorComment.objects.filter(report__user=user)
 
     def perform_create(self, serializer):
         serializer.save(doctor=self.request.user)
@@ -165,13 +174,28 @@ class DoctorLicenseView(generics.RetrieveUpdateAPIView):
             return Response(serializer.data)
 class DoctorAvailabilityViewSet(viewsets.ModelViewSet):
     """
-    API for doctors to manage their availability slots.
+    API for doctors to manage their availability slots and patients to view them.
     """
     serializer_class = DoctorAvailabilitySerializer
-    permission_classes = [IsDoctor]
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [permissions.IsAuthenticated()]
+        return [IsDoctorRole()]
 
     def get_queryset(self):
-        return DoctorAvailability.objects.filter(doctor=self.request.user)
+        queryset = DoctorAvailability.objects.all()
+        doctor_id = self.request.query_params.get('doctor')
+        
+        if doctor_id:
+            queryset = queryset.filter(doctor_id=doctor_id)
+        elif self.request.user.is_authenticated and self.request.user.role == 'DOCTOR':
+            queryset = queryset.filter(doctor=self.request.user)
+        else:
+            # Patients must provide a doctor_id to see slots
+            queryset = queryset.none()
+            
+        return queryset.filter(is_active=True)
 
     @action(detail=False, methods=['post'])
     def sync(self, request):
@@ -245,6 +269,25 @@ class AppointmentViewSet(viewsets.ModelViewSet):
             return Appointment.objects.filter(doctor=user)
         return Appointment.objects.filter(patient=user)
 
+    def create(self, request, *args, **kwargs):
+        # Additional check to prevent double-booking before creating PENDING appointment
+        doctor_id = request.data.get('doctor')
+        date = request.data.get('appointment_date')
+        start_time = request.data.get('start_time')
+        
+        if Appointment.objects.filter(
+            doctor_id=doctor_id, 
+            appointment_date=date, 
+            start_time=start_time, 
+            status='PAID'
+        ).exists():
+            return Response(
+                {"error": "This time slot has already been booked and paid for."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        return super().create(request, *args, **kwargs)
+
     def perform_create(self, serializer):
         # Default status is PENDING until payment is verified
         serializer.save(patient=self.request.user)
@@ -261,6 +304,18 @@ class AppointmentViewSet(viewsets.ModelViewSet):
 
         if not token or not amount:
             return Response({"error": "Token and amount are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Double check availability before confirming to prevent race conditions
+        if Appointment.objects.filter(
+            doctor=appointment.doctor,
+            appointment_date=appointment.appointment_date,
+            start_time=appointment.start_time,
+            status='PAID'
+        ).exclude(id=appointment.id).exists():
+            return Response(
+                {"error": "This slot was just booked by someone else. Please contact support for a refund."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         # Integration with Khalti API
         import requests
@@ -280,14 +335,20 @@ class AppointmentViewSet(viewsets.ModelViewSet):
             if response.status_code == 200:
                 resp_data = response.json()
                 # Verify amount matches (Khalti amount is in paisa)
-                if int(amount) == int(float(appointment.doctor.consultation_fee) * 100):
+                # Consultation fee might be string or float
+                expected_amount = int(float(appointment.doctor.consultation_fee) * 100)
+                if int(amount) == expected_amount:
                     appointment.status = 'PAID'
                     appointment.payment_id = resp_data.get('idx')
                     appointment.amount_paid = float(amount) / 100
                     appointment.save()
                     return Response({"status": "Payment verified and appointment confirmed"})
                 else:
-                    return Response({"error": "Amount mismatch"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({
+                        "error": "Amount mismatch", 
+                        "expected": expected_amount, 
+                        "received": amount
+                    }, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response({"error": "Khalti verification failed", "detail": response.json()}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:

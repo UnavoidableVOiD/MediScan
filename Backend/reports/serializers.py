@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 from .models import Report, ExtractedReportData, ReportResult
 
 class ReportResultSerializer(serializers.ModelSerializer):
@@ -15,12 +16,24 @@ class ExtractedDataSerializer(serializers.ModelSerializer):
 class ReportSerializer(serializers.ModelSerializer):
     extracted_data = ExtractedDataSerializer(read_only=True)
     result = ReportResultSerializer(read_only=True)
-    doctor_comment = serializers.StringRelatedField(read_only=True)
+    
+    # We use a MethodField to handle the OneToOne relation cleanly
+    doctor_comment = serializers.SerializerMethodField()
     
     class Meta:
         model = Report
         fields = ['id', 'file', 'uploaded_at', 'status', 'extracted_data', 'result', 'doctor_comment']
         read_only_fields = ['id', 'uploaded_at', 'status', 'extracted_data', 'result', 'doctor_comment']
+
+    @extend_schema_field(serializers.DictField())
+    def get_doctor_comment(self, obj):
+        from doctor.models import DoctorComment
+        from doctor.serializers import DoctorCommentSerializer
+        try:
+            comment = obj.doctor_comment
+            return DoctorCommentSerializer(comment).data
+        except DoctorComment.DoesNotExist:
+            return None
 
 
     def validate_file(self, value):

@@ -38,9 +38,13 @@ const ViewReportResult = () => {
   const { currentReport, currentResult, loading, error } = useSelector(
     (state) => state.reports,
   );
-  const { recommendedDoctors, recommendedLoading, bookingLoading, availability, loading: availabilityLoading } = useSelector(
-    (state) => state.appointment,
-  );
+  const {
+    recommendedDoctors,
+    recommendedLoading,
+    bookingLoading,
+    availability,
+    availabilityLoading,
+  } = useSelector((state) => state.appointment);
   const { user } = useSelector((state) => state.auth);
   const [openAccordion, setOpenAccordion] = useState("measurements");
   const [selectedDoctor, setSelectedDoctor] = useState(null);
@@ -143,7 +147,7 @@ const ViewReportResult = () => {
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4" />
                 <span className="truncate max-w-[200px]">
-                  {currentReport?.file?.split("/").pop() || 'Loading...'}
+                  {currentReport?.file?.split("/").pop() || "Loading..."}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -336,10 +340,11 @@ const ViewReportResult = () => {
                                 </td>
                                 <td className="py-4 text-right">
                                   <span
-                                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${test.status === "Normal"
-                                      ? "bg-green-100 text-green-700"
-                                      : "bg-orange-100 text-orange-700"
-                                      }`}
+                                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                      test.status === "Normal"
+                                        ? "bg-green-100 text-green-700"
+                                        : "bg-orange-100 text-orange-700"
+                                    }`}
                                   >
                                     {test.status}
                                   </span>
@@ -392,56 +397,86 @@ const ViewReportResult = () => {
                         </span>
                         <div className="flex flex-col sm:flex-row items-center gap-4">
                           <span
-                            className={`w-full sm:w-auto px-6 py-2 rounded-2xl text-lg font-bold text-center ${currentResult?.risk_level === "Low"
-                              ? "bg-green-100 text-green-700"
-                              : currentResult?.risk_level === "Medium"
-                                ? "bg-orange-100 text-orange-700"
-                                : "bg-red-100 text-red-700"
-                              }`}
+                            className={`w-full sm:w-auto px-6 py-2 rounded-2xl text-lg font-bold text-center ${
+                              currentResult?.risk_level === "Low"
+                                ? "bg-green-100 text-green-700"
+                                : currentResult?.risk_level === "Medium"
+                                  ? "bg-orange-100 text-orange-700"
+                                  : "bg-red-100 text-red-700"
+                            }`}
                           >
                             {currentResult?.risk_level} Risk
                           </span>
                         </div>
                       </div>
                       <p className="text-sm text-gray-600 leading-relaxed italic text-center sm:text-left flex-1">
-                        "Based on the clinical markers extracted from your report, our AI has categorized your health status as <strong>{currentResult?.risk_level} Risk</strong>. This assessment helps prioritize medical attention."
+                        "Based on the clinical markers extracted from your
+                        report, our AI has categorized your health status as{" "}
+                        <strong>{currentResult?.risk_level} Risk</strong>. This
+                        assessment helps prioritize medical attention."
                       </p>
                     </div>
 
                     <div className="space-y-4">
-                      <h4 className="text-sm font-black text-gray-400 uppercase tracking-tighter px-2">AI-Powered Recommendations</h4>
+                      <h4 className="text-sm font-black text-gray-400 uppercase tracking-tighter px-2">
+                        AI-Powered Recommendations
+                      </h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {currentResult?.risk_level === 'High' ? (
+                        {currentResult?.risk_level === "High" ? (
                           <>
                             <div className="p-5 bg-red-50 border border-red-100 rounded-2xl flex gap-4">
                               <AlertCircle className="w-6 h-6 text-red-500 shrink-0" />
                               <div className="space-y-1">
-                                <h5 className="font-bold text-red-900">Urgent Consultation</h5>
-                                <p className="text-xs text-red-700/80">Schedule an appointment with a {currentResult?.suggested_specialization || 'specialist'} within the next 24-48 hours.</p>
+                                <h5 className="font-bold text-red-900">
+                                  Urgent Consultation
+                                </h5>
+                                <p className="text-xs text-red-700/80">
+                                  Schedule an appointment with a{" "}
+                                  {currentResult?.suggested_specialization ||
+                                    "specialist"}{" "}
+                                  within the next 24-48 hours.
+                                </p>
                               </div>
                             </div>
                             <div className="p-5 bg-amber-50 border border-amber-100 rounded-2xl flex gap-4">
                               <Activity className="w-6 h-6 text-amber-500 shrink-0" />
                               <div className="space-y-1">
-                                <h5 className="font-bold text-amber-900">Monitor Symptoms</h5>
-                                <p className="text-xs text-amber-700/80">Track any physical changes or discomfort and report them immediately to your doctor.</p>
+                                <h5 className="font-bold text-amber-900">
+                                  Monitor Symptoms
+                                </h5>
+                                <p className="text-xs text-amber-700/80">
+                                  Track any physical changes or discomfort and
+                                  report them immediately to your doctor.
+                                </p>
                               </div>
                             </div>
                           </>
-                        ) : currentResult?.risk_level === 'Medium' ? (
+                        ) : currentResult?.risk_level === "Medium" ? (
                           <>
                             <div className="p-5 bg-orange-50 border border-orange-100 rounded-2xl flex gap-4">
                               <Calendar className="w-6 h-6 text-orange-500 shrink-0" />
                               <div className="space-y-1">
-                                <h5 className="font-bold text-orange-900">Follow-up Appointment</h5>
-                                <p className="text-xs text-orange-700/80">Consult with a {currentResult?.suggested_specialization || 'specialist'} this week to discuss these results.</p>
+                                <h5 className="font-bold text-orange-900">
+                                  Follow-up Appointment
+                                </h5>
+                                <p className="text-xs text-orange-700/80">
+                                  Consult with a{" "}
+                                  {currentResult?.suggested_specialization ||
+                                    "specialist"}{" "}
+                                  this week to discuss these results.
+                                </p>
                               </div>
                             </div>
                             <div className="p-5 bg-blue-50 border border-blue-100 rounded-2xl flex gap-4">
                               <TrendingUp className="w-6 h-6 text-blue-500 shrink-0" />
                               <div className="space-y-1">
-                                <h5 className="font-bold text-blue-900">Lifestyle Adjustments</h5>
-                                <p className="text-xs text-blue-700/80">Review your diet and activity levels based on the abnormal parameters detected.</p>
+                                <h5 className="font-bold text-blue-900">
+                                  Lifestyle Adjustments
+                                </h5>
+                                <p className="text-xs text-blue-700/80">
+                                  Review your diet and activity levels based on
+                                  the abnormal parameters detected.
+                                </p>
                               </div>
                             </div>
                           </>
@@ -450,15 +485,25 @@ const ViewReportResult = () => {
                             <div className="p-5 bg-green-50 border border-green-100 rounded-2xl flex gap-4">
                               <CheckCircle2 className="w-6 h-6 text-green-500 shrink-0" />
                               <div className="space-y-1">
-                                <h5 className="font-bold text-green-900">Maintain Routine</h5>
-                                <p className="text-xs text-green-700/80">Continue your current healthy habits. Follow up as per your regular check-up schedule.</p>
+                                <h5 className="font-bold text-green-900">
+                                  Maintain Routine
+                                </h5>
+                                <p className="text-xs text-green-700/80">
+                                  Continue your current healthy habits. Follow
+                                  up as per your regular check-up schedule.
+                                </p>
                               </div>
                             </div>
                             <div className="p-5 bg-blue-50 border border-blue-100 rounded-2xl flex gap-4">
                               <Heart className="w-6 h-6 text-blue-500 shrink-0" />
                               <div className="space-y-1">
-                                <h5 className="font-bold text-blue-900">Preventive Care</h5>
-                                <p className="text-xs text-blue-700/80">Focus on balanced nutrition and hydration to keep these markers in their optimal range.</p>
+                                <h5 className="font-bold text-blue-900">
+                                  Preventive Care
+                                </h5>
+                                <p className="text-xs text-blue-700/80">
+                                  Focus on balanced nutrition and hydration to
+                                  keep these markers in their optimal range.
+                                </p>
                               </div>
                             </div>
                           </>
@@ -498,7 +543,9 @@ const ViewReportResult = () => {
 
               <button
                 onClick={() => {
-                  const chatbotBtn = document.querySelector('button.fixed.bottom-8.right-8');
+                  const chatbotBtn = document.querySelector(
+                    "button.fixed.bottom-8.right-8",
+                  );
                   if (chatbotBtn) chatbotBtn.click();
                 }}
                 className="w-full py-4 bg-medic-accent text-medic-dark rounded-2xl font-bold hover:bg-medic-accent/90 transition-all active:scale-95 shadow-lg shadow-black/20"
@@ -526,7 +573,8 @@ const ViewReportResult = () => {
           {currentResult && (
             <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-sm space-y-6">
               <h3 className="text-xl font-bold text-gray-900 flex items-center gap-3">
-                <Activity className="w-6 h-6 text-medic-dark" /> Recommended Specialists
+                <Activity className="w-6 h-6 text-medic-dark" /> Recommended
+                Specialists
               </h3>
 
               <div className="space-y-4">
@@ -536,18 +584,28 @@ const ViewReportResult = () => {
                   </div>
                 ) : recommendedDoctors.length > 0 ? (
                   recommendedDoctors.map((doc) => (
-                    <div key={doc.id} className="p-4 bg-neutral-soft/30 rounded-2xl border border-gray-100 space-y-3">
+                    <div
+                      key={doc.id}
+                      className="p-4 bg-neutral-soft/30 rounded-2xl border border-gray-100 space-y-3"
+                    >
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 bg-medic-dark rounded-xl flex items-center justify-center text-white font-bold">
-                          {doc.first_name[0]}{doc.last_name[0]}
+                          {doc.first_name[0]}
+                          {doc.last_name[0]}
                         </div>
                         <div>
-                          <h4 className="font-bold text-gray-900">Dr. {doc.first_name} {doc.last_name}</h4>
-                          <p className="text-xs text-medic-dark font-bold uppercase">{doc.specialization?.replace('_', ' ')}</p>
+                          <h4 className="font-bold text-gray-900">
+                            Dr. {doc.first_name} {doc.last_name}
+                          </h4>
+                          <p className="text-xs text-medic-dark font-bold uppercase">
+                            {doc.specialization?.replace("_", " ")}
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="font-bold text-gray-500">Fee: Rs. {doc.consultation_fee}</span>
+                        <span className="font-bold text-gray-500">
+                          Fee: Rs. {doc.consultation_fee}
+                        </span>
                         <button
                           onClick={() => {
                             setSelectedDoctor(doc);
@@ -590,24 +648,39 @@ const ViewReportResult = () => {
             >
               <div className="p-8 md:p-10 space-y-6">
                 <div className="text-center space-y-2">
-                  <h2 className="text-2xl font-bold text-gray-900">Book Appointment</h2>
-                  <p className="text-gray-500">Consultation with Dr. {selectedDoctor?.first_name} {selectedDoctor?.last_name}</p>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Book Appointment
+                  </h2>
+                  <p className="text-gray-500">
+                    Consultation with Dr. {selectedDoctor?.first_name}{" "}
+                    {selectedDoctor?.last_name}
+                  </p>
                 </div>
 
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div className="p-4 bg-neutral-soft rounded-2xl border border-gray-100">
-                      <span className="block text-gray-400 font-bold uppercase text-[10px] mb-1">Fee</span>
-                      <span className="text-lg font-bold text-medic-dark">Rs. {selectedDoctor?.consultation_fee}</span>
+                      <span className="block text-gray-400 font-bold uppercase text-[10px] mb-1">
+                        Fee
+                      </span>
+                      <span className="text-lg font-bold text-medic-dark">
+                        Rs. {selectedDoctor?.consultation_fee}
+                      </span>
                     </div>
                     <div className="p-4 bg-neutral-soft rounded-2xl border border-gray-100">
-                      <span className="block text-gray-400 font-bold uppercase text-[10px] mb-1">Specialty</span>
-                      <span className="text-sm font-bold text-gray-900">{selectedDoctor?.specialization?.replace('_', ' ')}</span>
+                      <span className="block text-gray-400 font-bold uppercase text-[10px] mb-1">
+                        Specialty
+                      </span>
+                      <span className="text-sm font-bold text-gray-900">
+                        {selectedDoctor?.specialization?.replace("_", " ")}
+                      </span>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest px-2 text-center block">Available Slots</label>
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest px-2 text-center block">
+                      Available Slots
+                    </label>
                     <div className="flex flex-wrap justify-center gap-2">
                       {availabilityLoading ? (
                         <Loader2 className="w-5 h-5 animate-spin text-medic-dark" />
@@ -616,19 +689,24 @@ const ViewReportResult = () => {
                           <button
                             key={i}
                             onClick={() => setSelectedSlot(slot)}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${selectedSlot === slot ? 'bg-medic-dark text-white border-medic-dark shadow-md scale-105' : 'bg-neutral-soft text-gray-600 border-gray-100 hover:border-medic-dark/20'}`}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${selectedSlot === slot ? "bg-medic-dark text-white border-medic-dark shadow-md scale-105" : "bg-neutral-soft text-gray-600 border-gray-100 hover:border-medic-dark/20"}`}
                           >
-                            {slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}
+                            {slot.start_time.slice(0, 5)} -{" "}
+                            {slot.end_time.slice(0, 5)}
                           </button>
                         ))
                       ) : (
-                        <p className="text-xs text-gray-400 italic">No slots available for this week.</p>
+                        <p className="text-xs text-gray-400 italic">
+                          No slots available for this week.
+                        </p>
                       )}
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest px-2">Reason (Optional)</label>
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest px-2">
+                      Reason (Optional)
+                    </label>
                     <textarea
                       value={appointmentNote}
                       onChange={(e) => setAppointmentNote(e.target.value)}
@@ -647,31 +725,43 @@ const ViewReportResult = () => {
                   </button>
                   <button
                     onClick={async () => {
-                      if (!selectedSlot) return toast.warning("Please select a time slot");
+                      if (!selectedSlot)
+                        return toast.warning("Please select a time slot");
                       try {
                         const apptData = {
                           doctor: selectedDoctor.id,
-                          appointment_date: new Date().toISOString().split('T')[0], // Placeholder: Today
+                          appointment_date: new Date()
+                            .toISOString()
+                            .split("T")[0], // Placeholder: Today
                           start_time: selectedSlot.start_time,
                           end_time: selectedSlot.end_time,
-                          notes: appointmentNote
+                          notes: appointmentNote,
                         };
-                        const appt = await dispatch(bookAppointment(apptData)).unwrap();
+                        const appt = await dispatch(
+                          bookAppointment(apptData),
+                        ).unwrap();
 
                         // Initialize Khalti
                         const config = {
-                          publicKey: import.meta.env.VITE_KHALTI_PUBLIC_KEY || "test_public_key_xxxx",
+                          publicKey:
+                            import.meta.env.VITE_KHALTI_PUBLIC_KEY ||
+                            "test_public_key_xxxx",
                           productIdentity: appt.id.toString(),
                           productName: `Consultation with Dr. ${selectedDoctor.first_name}`,
                           productUrl: window.location.href,
                           eventHandler: {
                             onSuccess(payload) {
-                              dispatch(verifyPayment({
-                                appointmentId: appt.id,
-                                data: { token: payload.token, amount: payload.amount }
-                              })).then(() => {
+                              dispatch(
+                                verifyPayment({
+                                  appointmentId: appt.id,
+                                  data: {
+                                    token: payload.token,
+                                    amount: payload.amount,
+                                  },
+                                }),
+                              ).then(() => {
                                 setIsBookingModalOpen(false);
-                                navigate('/dashboard');
+                                navigate("/dashboard");
                               });
                             },
                             onError(error) {
@@ -679,13 +769,22 @@ const ViewReportResult = () => {
                               toast.error("Khalti payment failed");
                             },
                             onClose() {
-                              console.log('widget is closing');
-                            }
+                              console.log("widget is closing");
+                            },
                           },
-                          paymentPreference: ["KHALTI", "EBANKING", "MOBILE_BANKING", "CONNECT_IPS", "SCT"],
+                          paymentPreference: [
+                            "KHALTI",
+                            "EBANKING",
+                            "MOBILE_BANKING",
+                            "CONNECT_IPS",
+                            "SCT",
+                          ],
                         };
                         const checkout = new window.KhaltiCheckout(config);
-                        checkout.show({ amount: parseInt(selectedDoctor.consultation_fee) * 100 });
+                        checkout.show({
+                          amount:
+                            parseInt(selectedDoctor.consultation_fee) * 100,
+                        });
                       } catch (err) {
                         toast.error(err?.message || "Booking failed");
                       }
@@ -693,7 +792,11 @@ const ViewReportResult = () => {
                     disabled={bookingLoading}
                     className="flex-1 py-4 bg-medic-dark text-white rounded-2xl font-bold hover:bg-medic-primary transition-all flex items-center justify-center gap-2"
                   >
-                    {bookingLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Pay & Book"}
+                    {bookingLoading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      "Pay & Book"
+                    )}
                   </button>
                 </div>
               </div>
