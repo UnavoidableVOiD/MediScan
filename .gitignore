@@ -33,3 +33,5 @@ ML/test_pipeline.txt
 ML/docker_chat.json
 ML/docker_payload.json
 ML/garbage.pdf
+# Separate reference project with its own git repo
+Booking/
