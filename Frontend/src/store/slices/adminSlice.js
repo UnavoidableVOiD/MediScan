@@ -124,11 +124,24 @@ export const createAdmin = createAsyncThunk(
     }
 );
 
+export const fetchAdminFinancialStats = createAsyncThunk(
+    'admin/fetchFinancialStats',
+    async (_, { rejectWithValue }) => {
+        try {
+            const response = await adminApi.getFinancialStats();
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || 'Failed to fetch financial stats');
+        }
+    }
+);
+
 // --- Slice ---
 
 const initialState = {
     doctors: [],
     patients: [],
+    financialStats: null,
     loading: false,
     actionLoading: false,
     error: null,
@@ -279,6 +292,18 @@ const adminSlice = createSlice({
             .addCase(createAdmin.rejected, (state, action) => {
                 state.actionLoading = false;
                 toast.error(action.payload?.error || "Failed to create admin");
+            })
+            // Fetch Financial Stats
+            .addCase(fetchAdminFinancialStats.pending, (state) => {
+                state.loading = true;
+            })
+            .addCase(fetchAdminFinancialStats.fulfilled, (state, action) => {
+                state.loading = false;
+                state.financialStats = action.payload;
+            })
+            .addCase(fetchAdminFinancialStats.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
             });
     },
 });

@@ -65,6 +65,7 @@ class CustomUser(AbstractUser):
     
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
+    date_of_birth = models.DateField(null=True, blank=True)
     phone_number = PhoneNumberField(unique=True, null=True, blank=True)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='PATIENT')
     specialization = models.CharField(
@@ -89,6 +90,15 @@ class CustomUser(AbstractUser):
         decimal_places=2, 
         default=0.00,
         help_text=_("Consultation fee per appointment")
+    )
+    experience = models.PositiveIntegerField(
+        default=0,
+        help_text=_("Years of professional experience")
+    )
+    bio = models.TextField(
+        null=True, 
+        blank=True,
+        help_text=_("Professional biography and expertise")
     )
     
     created_at = models.DateTimeField(auto_now_add=True)

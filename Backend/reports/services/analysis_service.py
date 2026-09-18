@@ -96,21 +96,44 @@ class AnalysisService:
     @staticmethod
     def _get_suggested_specialty(conditions):
         """
-        Simple mapping from conditions to doctor specializations.
+        Maps detected abnormal conditions to doctor specializations.
+        Returns 'GENERAL_PHYSICIAN' if no specific abnormal condition is found.
         """
-        specialty_map = {
-            'Diabetes': 'GENERAL_PHYSICIAN',
+        # Define keywords that indicate a healthy/normal result
+        HEALTHY_KEYWORDS = ['healthy', 'normal', 'negative', 'none', 'low risk', 'no issues']
+        
+        # Mapping mapping from condition name substrings to backend specialization constants
+        SPECIALTY_MAP = {
+            'Heart': 'CARDIOLOGIST',
+            'Cardio': 'CARDIOLOGIST',
             'Hypertension': 'CARDIOLOGIST',
-            'Heart Disease': 'CARDIOLOGIST',
-            'Skin Allergy': 'DERMATOLOGIST',
-            'Migraine': 'NEUROLOGIST',
-            'Fracture': 'ORTHOPEDIC',
-            'Flu': 'PEDIATRICIAN',
+            'Diabetes': 'ENDOCRINOLOGIST',
+            'Thyroid': 'ENDOCRINOLOGIST',
+            'Liver': 'HEPATOLOGIST',
+            'Kidney': 'NEPHROLOGIST',
+            'Renal': 'NEPHROLOGIST',
+            'Anemia': 'HEMATOLOGIST',
+            'Blood': 'HEMATOLOGIST',
         }
         
-        for condition in conditions:
-            name = condition.get('name')
-            if name in specialty_map:
-                return specialty_map[name]
+        # We want to find ALL relevant abnormal conditions
+        suggested_specialties = set()
         
-        return 'GENERAL_PHYSICIAN'  # Default fallback
+        for condition in conditions:
+            name = condition.get('name', '')
+            details = condition.get('details', '').lower()
+            
+            # Check if this specific condition is abnormal
+            is_healthy = any(keyword in details for keyword in HEALTHY_KEYWORDS)
+            
+            if not is_healthy:
+                # Find matching specialty
+                for key, specialty in SPECIALTY_MAP.items():
+                    if key.lower() in name.lower():
+                        suggested_specialties.add(specialty)
+        
+        if suggested_specialties:
+            # Return unique specialties as comma-separated string
+            return ",".join(sorted(list(suggested_specialties)))
+            
+        return 'GENERAL_PHYSICIAN'

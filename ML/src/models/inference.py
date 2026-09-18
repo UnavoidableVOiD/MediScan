@@ -216,15 +216,31 @@ if __name__ == "__main__":
     print("\n--- RUNNING COMPLETE SYSTEM CHECK ---")
     
     mock_data = {
-    "Alamine_Aminotransferase": 4.0,
-    "Blood_Urea": 25.0,
-    "Creatinine": 9.0,
-    "Sodium": 138.2,
-    "Potassium": 44.0,
-    "TSH": 2.51,
-    "MCV": 91.9,
-    "MCH": 32.8,
-    "MCHC": 35.7
+      "Bilirubin_Total": 0.8,
+    "Direct_Bilirubin": 0.2,
+    "Alkaline_Phosphotase": 144.0,
+    "Alamine_Aminotransferase": 38.0,
+    "Aspartate_Aminotransferase": 21.0,
+    "Total_Protiens": 6.0,
+    "Albumin": 4.0,
+    "Blood_Urea": 12.0,
+    "Creatinine": 0.9,
+    "Sodium": 135.0,
+    "Potassium": 4.0,
+    "Glucose": 70.0,
+    "T3": 5.21,
+    "TT4": 1.19,
+    "TSH": 2.242,
+    "Hemoglobin": 17.2,
+    "RBC": 5.85,
+    "WBC": 10400.0,
+    "MCV": 87.0,
+    "MCH": 34.0,
+    "MCHC": 34.0,
+    "Cholesterol": 172.0,
+    "LDL": 117.0,
+    "HDL": 31.0,
+    "Triglyceride": 120.0
 }
     
     import json

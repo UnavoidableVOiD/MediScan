@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   FileText,
@@ -15,6 +15,7 @@ import {
   Activity,
   Calendar,
   MessageSquare,
+  Download,
 } from "lucide-react";
 
 import { useSelector, useDispatch } from "react-redux";
@@ -22,25 +23,65 @@ import {
   fetchReports,
   deleteReport,
   setCurrentReport,
+  fetchTrends,
 } from "../store/slices/reportsSlice";
-import { fetchAppointments } from "../store/slices/appointmentSlice";
+import {
+  fetchAppointments,
+  cancelAppointment,
+} from "../store/slices/appointmentSlice";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { BASE_URL } from "../services/api";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 const PatientDashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const { user } = useSelector((state) => state.auth);
-  const { reports, loading } = useSelector((state) => state.reports);
+  const { reports, trends, loading, trendsLoading } = useSelector(
+    (state) => state.reports,
+  );
   const { appointments, loading: appointmentsLoading } = useSelector(
     (state) => state.appointment,
   );
 
+  const [selectedMetric, setSelectedMetric] = useState("");
+
   useEffect(() => {
     dispatch(fetchReports());
     dispatch(fetchAppointments());
+    dispatch(fetchTrends());
   }, [dispatch]);
+
+  const availableMetrics = useMemo(() => {
+    const metricsSet = new Set();
+    trends.forEach((point) => {
+      Object.keys(point.metrics).forEach((m) => metricsSet.add(m));
+    });
+    const metrics = Array.from(metricsSet);
+    if (metrics.length > 0 && !selectedMetric) {
+      setSelectedMetric(metrics[0]);
+    }
+    return metrics;
+  }, [trends, selectedMetric]);
+
+  const chartData = useMemo(() => {
+    return trends
+      .filter((point) => point.metrics[selectedMetric] !== undefined)
+      .map((point) => ({
+        date: point.date,
+        value: point.metrics[selectedMetric],
+      }));
+  }, [trends, selectedMetric]);
 
   const stats = [
     {
@@ -107,8 +148,88 @@ const PatientDashboard = () => {
     navigate(`/reports/${report.id}/result/`);
   };
 
+  // Modal State
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [appointmentToCancel, setAppointmentToCancel] = useState(null);
+  const [cancelMessage, setCancelMessage] = useState({
+    title: "",
+    body: "",
+    refund: false,
+  });
+
+  const initiateCancel = (appt) => {
+    const apptDate = new Date(`${appt.appointment_date}T${appt.start_time}`);
+    const now = new Date();
+    const diffHours = (apptDate - now) / (1000 * 60 * 60);
+
+    const isRefund = diffHours > 24;
+    setCancelMessage({
+      title: "Cancel Appointment?",
+      body: isRefund
+        ? "You are cancelling more than 24 hours in advance."
+        : "You are cancelling within 24 hours of the appointment.",
+      refund: isRefund,
+      refundText: isRefund
+        ? "You will receive a 60% refund."
+        : "No refund will be issued.",
+    });
+    setAppointmentToCancel(appt);
+    setShowCancelModal(true);
+  };
+
+  const confirmCancel = async () => {
+    if (appointmentToCancel) {
+      try {
+        await dispatch(cancelAppointment(appointmentToCancel.id)).unwrap();
+        setShowCancelModal(false);
+        setAppointmentToCancel(null);
+      } catch (err) {
+        // Error handled by slice
+      }
+    }
+  };
+
   return (
-    <div className="max-w-7xl mx-auto px-6 py-10 space-y-10">
+    <div className="max-w-7xl mx-auto px-6 pt-32 pb-10 space-y-10 relative">
+      {/* Cancellation Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-6"
+          >
+            <div className="p-4 bg-red-50 rounded-2xl w-16 h-16 flex items-center justify-center mx-auto text-red-500">
+              <AlertCircle size={32} />
+            </div>
+            <div className="text-center space-y-2">
+              <h3 className="text-2xl font-bold text-gray-900">
+                {cancelMessage.title}
+              </h3>
+              <p className="text-gray-500">{cancelMessage.body}</p>
+              <p
+                className={`font-bold ${cancelMessage.refund ? "text-green-600" : "text-gray-900"}`}
+              >
+                {cancelMessage.refundText}
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={() => setShowCancelModal(false)}
+                className="py-3 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+              >
+                Keep Appointment
+              </button>
+              <button
+                onClick={confirmCancel}
+                className="py-3 rounded-xl font-bold text-white bg-red-500 hover:bg-red-600 transition-colors shadow-lg shadow-red-500/30"
+              >
+                Yes, Cancel
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
       {/* Welcome Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -161,12 +282,6 @@ const PatientDashboard = () => {
             <h2 className="text-2xl font-bold text-gray-900">
               Upcoming Appointments
             </h2>
-            <Link
-              to="/doctors"
-              className="text-medic-dark font-bold text-sm hover:underline"
-            >
-              Find a Doctor
-            </Link>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -197,6 +312,12 @@ const PatientDashboard = () => {
                       <span className="inline-block px-2 py-0.5 bg-green-50 text-green-600 text-[10px] font-bold rounded-full">
                         Confirmed
                       </span>
+                      <button
+                        onClick={() => initiateCancel(appt)}
+                        className="ml-4 text-[10px] font-bold text-red-500 hover:text-red-700 underline"
+                      >
+                        Cancel
+                      </button>
                     </div>
                   </div>
                 ))
@@ -209,6 +330,73 @@ const PatientDashboard = () => {
             )}
           </div>
         </div>
+
+        {/* Trends Chart Column */}
+        {availableMetrics.length > 0 && (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+              <TrendingUp className="w-6 h-6 text-medic-dark" /> Health Trends
+            </h2>
+            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                  Metric: {selectedMetric}
+                </span>
+                <select
+                  value={selectedMetric}
+                  onChange={(e) => setSelectedMetric(e.target.value)}
+                  className="bg-neutral-soft px-3 py-1.5 rounded-xl text-xs font-bold border-none outline-none focus:ring-2 focus:ring-medic-dark/20"
+                >
+                  {availableMetrics.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="h-[200px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData}>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      vertical={false}
+                      stroke="#f0f0f0"
+                    />
+                    <XAxis
+                      dataKey="date"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 10, fontWeight: 700, fill: "#999" }}
+                      dy={10}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 10, fontWeight: 700, fill: "#999" }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: "1rem",
+                        border: "none",
+                        boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+                        fontSize: "12px",
+                        fontWeight: "bold",
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      stroke="#1F7A5B"
+                      strokeWidth={3}
+                      dot={{ r: 4, fill: "#1F7A5B", strokeWidth: 0 }}
+                      activeDot={{ r: 6, strokeWidth: 0 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Reports List */}
@@ -287,6 +475,16 @@ const PatientDashboard = () => {
                           >
                             <Trash2 className="w-5 h-5" />
                           </button>
+                          <a
+                            href={`${BASE_URL}${report.file}`}
+                            download
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 text-gray-400 hover:text-medic-dark hover:bg-medic-light/20 rounded-lg transition-all"
+                            title="Download Report"
+                          >
+                            <Download className="w-5 h-5" />
+                          </a>
                           {report.status === "PENDING" ? (
                             <button
                               onClick={() => handleExtract(report)}

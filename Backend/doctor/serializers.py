@@ -1,3 +1,4 @@
+from django.db import models
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import DoctorPatientLink, DoctorComment, DoctorLicense, SupportingDocument, DoctorAvailability, Appointment
@@ -11,10 +12,11 @@ class PatientUserSerializer(serializers.ModelSerializer):
     status = serializers.SerializerMethodField()
     last_visit = serializers.SerializerMethodField()
     notes = serializers.SerializerMethodField()
+    clinical_observations = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id', 'email', 'first_name', 'last_name', 'phone_number', 'condition', 'status', 'last_visit', 'notes']
+        fields = ['id', 'email', 'first_name', 'last_name', 'phone_number', 'condition', 'status', 'last_visit', 'notes', 'clinical_observations']
 
     @extend_schema_field(serializers.CharField())
     def get_condition(self, obj):
@@ -25,21 +27,56 @@ class PatientUserSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(serializers.CharField())
     def get_status(self, obj):
-        # Get status from the link
         doctor = self.context['request'].user
         link = DoctorPatientLink.objects.filter(doctor=doctor, patient=obj).first()
-        return link.status if link else "N/A"
+        if link:
+            return link.status
+        # Fallback to appointment status for patients who only have appointments
+        latest_appt = Appointment.objects.filter(
+            doctor=doctor, 
+            patient=obj, 
+            status__in=['PAID', 'COMPLETED']
+        ).order_by('-appointment_date').first()
+        if latest_appt:
+            return "ONGOING" if latest_appt.status == 'PAID' else "COMPLETED"
+        return "N/A"
 
-    @extend_schema_field(serializers.DateTimeField())
+    @extend_schema_field(serializers.DateField())
     def get_last_visit(self, obj):
-        link = DoctorPatientLink.objects.filter(patient=obj).first()
-        return link.linked_at if link else None
+        doctor = self.context['request'].user
+        link = DoctorPatientLink.objects.filter(doctor=doctor, patient=obj).first()
+        if link:
+            return link.linked_at.date()
+        # Fallback to latest appointment date
+        latest_appt = Appointment.objects.filter(
+            doctor=doctor,
+            patient=obj, 
+            status__in=['PAID', 'COMPLETED']
+        ).order_by('-appointment_date').first()
+        return latest_appt.appointment_date if latest_appt else None
 
     @extend_schema_field(serializers.CharField())
     def get_notes(self, obj):
         doctor = self.context['request'].user
         link = DoctorPatientLink.objects.filter(doctor=doctor, patient=obj).first()
-        return link.notes if link else ""
+        if link:
+            return link.notes
+        # If no link, maybe return notes from latest appointment
+        latest_appt = Appointment.objects.filter(doctor=doctor, patient=obj).order_by('-appointment_date').first()
+        return latest_appt.notes if latest_appt else ""
+    @extend_schema_field(serializers.CharField())
+    def get_clinical_observations(self, obj):
+        doctor = self.context['request'].user
+        link = DoctorPatientLink.objects.filter(doctor=doctor, patient=obj).first()
+        if link:
+            return link.clinical_observations
+        # Fallback to latest appointment observations
+        latest_appt = Appointment.objects.filter(
+            doctor=doctor,
+            patient=obj,
+            status__in=['PAID', 'COMPLETED']
+        ).order_by('-appointment_date').first()
+        return latest_appt.clinical_observations if latest_appt else ""
 
 
 class DoctorDashboardSerializer(serializers.Serializer):
@@ -50,10 +87,51 @@ class DoctorDashboardSerializer(serializers.Serializer):
 
 
 class DoctorUserSerializer(serializers.ModelSerializer):
+    next_available_slot = serializers.SerializerMethodField()
     
     class Meta:
         model = User
-        fields = ['id', 'email', 'first_name', 'last_name', 'specialization', 'consultation_fee']
+        fields = ['id', 'email', 'first_name', 'last_name', 'specialization', 'consultation_fee', 'experience', 'bio', 'next_available_slot']
+
+    @extend_schema_field(serializers.DictField())
+    def get_next_available_slot(self, obj):
+        from .models import DoctorAvailability
+        from django.utils import timezone
+        from datetime import datetime, time
+        
+        now = timezone.now()
+        current_date = now.date()
+        current_time = now.time()
+
+        # Find all future slots, sorted by date and time
+        slots = DoctorAvailability.objects.filter(
+            doctor=obj,
+            is_active=True
+        ).filter(
+            # Filter by date and time
+            models.Q(date__gt=current_date) | 
+            models.Q(date=current_date, start_time__gt=current_time)
+        ).order_by('date', 'start_time')
+
+        for slot in slots:
+            # Check if this slot is already booked
+            if not Appointment.objects.filter(
+                doctor=obj,
+                appointment_date=slot.date,
+                start_time=slot.start_time,
+                status__in=['PAID', 'PENDING']
+            ).exists():
+                return {
+                    "date": slot.date,
+                    "start_time": slot.start_time,
+                    "label": slot.label
+                }
+        return None
+
+class DoctorUserDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'first_name', 'last_name', 'specialization', 'consultation_fee', 'experience', 'bio']
 
 class DoctorPatientLinkSerializer(serializers.ModelSerializer):
     patient = PatientUserSerializer(read_only=True)
@@ -66,7 +144,7 @@ class DoctorPatientLinkSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DoctorPatientLink
-        fields = ['id', 'patient', 'doctor', 'doctor_id', 'status', 'notes', 'linked_at']
+        fields = ['id', 'patient', 'doctor', 'doctor_id', 'status', 'notes', 'clinical_observations', 'linked_at']
         read_only_fields = ['id', 'patient', 'doctor', 'linked_at']
 
     def validate_patient(self, value):
@@ -75,16 +153,23 @@ class DoctorPatientLinkSerializer(serializers.ModelSerializer):
         return value
 
 class DoctorCommentSerializer(serializers.ModelSerializer):
+    doctor_name = serializers.SerializerMethodField()
+
     class Meta:
         model = DoctorComment
-        fields = ['id', 'report', 'doctor', 'comment', 'created_at', 'updated_at']
+        fields = ['id', 'report', 'doctor', 'doctor_name', 'comment', 'created_at', 'updated_at']
         read_only_fields = ['id', 'doctor', 'created_at', 'updated_at']
 
+    def get_doctor_name(self, obj):
+        return f"{obj.doctor.first_name} {obj.doctor.last_name}"
+
     def validate(self, data):
-        # Ensure the doctor is linked to the patient who owns the report
+        # Ensure the doctor is linked to OR has an appointment with the patient
         doctor = self.context['request'].user
         report = data.get('report')
-        if not DoctorPatientLink.objects.filter(doctor=doctor, patient=report.user).exists():
+        has_link = DoctorPatientLink.objects.filter(doctor=doctor, patient=report.user).exists()
+        has_appointment = Appointment.objects.filter(doctor=doctor, patient=report.user).exists()
+        if not has_link and not has_appointment:
             raise serializers.ValidationError("You can only comment on reports of your linked patients.")
         return data
 
@@ -146,22 +231,26 @@ class DoctorLicenseSerializer(serializers.ModelSerializer):
 class DoctorAvailabilitySerializer(serializers.ModelSerializer):
     class Meta:
         model = DoctorAvailability
-        fields = ['id', 'doctor', 'day_of_week', 'start_time', 'end_time', 'is_active']
+        fields = ['id', 'doctor', 'day_of_week', 'date', 'start_time', 'end_time', 'label', 'is_active']
         read_only_fields = ['id', 'doctor']
 
 class AppointmentSerializer(serializers.ModelSerializer):
     patient_email = serializers.EmailField(source='patient.email', read_only=True)
+    patient_first_name = serializers.CharField(source='patient.first_name', read_only=True)
+    patient_last_name = serializers.CharField(source='patient.last_name', read_only=True)
     doctor_email = serializers.EmailField(source='doctor.email', read_only=True)
     doctor_full_name = serializers.SerializerMethodField()
+    fee = serializers.DecimalField(source='doctor.consultation_fee', max_digits=10, decimal_places=2, read_only=True)
 
     class Meta:
         model = Appointment
         fields = [
-            'id', 'patient', 'patient_email', 'doctor', 'doctor_email', 'doctor_full_name',
-            'appointment_date', 'start_time', 'end_time', 'status', 'notes',
-            'payment_id', 'amount_paid', 'created_at'
+            'id', 'patient', 'patient_email', 'patient_first_name', 'patient_last_name',
+            'doctor', 'doctor_email', 'doctor_full_name',
+            'appointment_date', 'start_time', 'end_time', 'status', 'notes', 'clinical_observations',
+            'payment_id', 'amount_paid', 'refund_amount', 'fee', 'doctor_revenue', 'admin_revenue', 'created_at'
         ]
-        read_only_fields = ['id', 'patient', 'status', 'payment_id', 'amount_paid', 'created_at']
+        read_only_fields = ['id', 'patient', 'status', 'payment_id', 'amount_paid', 'refund_amount', 'fee', 'doctor_revenue', 'admin_revenue', 'created_at']
 
     def get_doctor_full_name(self, obj):
         return f"{obj.doctor.first_name} {obj.doctor.last_name}"

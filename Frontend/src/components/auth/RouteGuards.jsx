@@ -1,66 +1,93 @@
-import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import React from "react";
+import { Navigate, useLocation } from "react-router-dom";
+import { useSelector } from "react-redux";
 
 export const ProtectedRoute = ({ children, role }) => {
-    const { isAuthenticated, user, initialized } = useSelector(state => state.auth);
-    const location = useLocation();
+  const { isAuthenticated, user, initialized } = useSelector(
+    (state) => state.auth,
+  );
+  const location = useLocation();
 
-    if (!initialized) return null;
+  if (!initialized) return null;
 
-    if (!isAuthenticated) {
-        return <Navigate to="/login" state={{ from: location }} replace />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Role-based access control
+  if (role && user?.role?.toLowerCase() !== role.toLowerCase()) {
+    const targetPath =
+      user?.role?.toLowerCase() === "doctor"
+        ? "/doctor-dashboard"
+        : "/dashboard";
+    return <Navigate to={targetPath} replace />;
+  }
+
+  // Special redirection for shared /profile path
+  if (location.pathname === "/profile" && user?.role === "DOCTOR") {
+    return <Navigate to="/doctor-profile" replace />;
+  }
+
+  // Handle Clinical Verification for Doctors
+  if (user?.role === "DOCTOR" && user?.doctor_status === "UNVERIFIED") {
+    const allowedPaths = [
+      "/doctor-profile",
+      "/verify-doctor",
+      "/about",
+      "/contact",
+      "/services",
+    ];
+    if (!allowedPaths.includes(location.pathname)) {
+      return <Navigate to="/doctor-profile" replace />;
     }
+  }
 
-    // Role-based access control
-    if (role && user?.role?.toLowerCase() !== role.toLowerCase()) {
-        const targetPath = user?.role?.toLowerCase() === 'doctor' ? '/doctor-dashboard' : '/dashboard';
-        return <Navigate to={targetPath} replace />;
-    }
-
-    // Special redirection for shared /profile path
-    if (location.pathname === '/profile' && user?.role === 'DOCTOR') {
-        return <Navigate to="/doctor-profile" replace />;
-    }
-
-    // Handle Clinical Verification for Doctors
-    if (user?.role === 'DOCTOR' && user?.doctor_status === 'UNVERIFIED') {
-        const allowedPaths = ['/doctor-profile', '/verify-doctor', '/about', '/contact', '/services'];
-        if (!allowedPaths.includes(location.pathname)) {
-            return <Navigate to="/doctor-profile" replace />;
-        }
-    }
-
-    return children;
+  return children;
 };
 
 export const PublicRoute = ({ children }) => {
-    const { isAuthenticated, user, initialized } = useSelector(state => state.auth);
+  const { isAuthenticated, user, initialized } = useSelector(
+    (state) => state.auth,
+  );
 
-    if (!initialized) return null;
+  if (!initialized) return null;
 
-    if (isAuthenticated) {
-        if (user?.role?.toLowerCase() === 'patient') return <Navigate to="/dashboard" replace />;
-        if (user?.role?.toLowerCase() === 'doctor') return <Navigate to="/doctor-dashboard" replace />;
-        return <Navigate to="/" replace />;
-    }
+  if (isAuthenticated) {
+    if (user?.role?.toLowerCase() === "patient")
+      return <Navigate to="/dashboard" replace />;
+    if (user?.role?.toLowerCase() === "doctor")
+      return <Navigate to="/doctor-dashboard" replace />;
+    if (user?.role?.toUpperCase() === "ADMIN" || user?.is_superuser)
+      return <Navigate to="/admin/dashboard" replace />;
+    return <Navigate to="/" replace />;
+  }
 
-    return children;
+  return children;
 };
 
 export const AdminRoute = ({ children }) => {
-    const { isAuthenticated, user, initialized } = useSelector(state => state.auth);
-    const location = useLocation();
+  const { isAuthenticated, user, initialized } = useSelector(
+    (state) => state.auth,
+  );
+  const location = useLocation();
 
-    if (!initialized) return null;
+  console.log("AdminRoute checking:", {
+    isAuthenticated,
+    role: user?.role,
+    initialized,
+  });
 
-    if (!isAuthenticated) {
-        return <Navigate to="/admin/login" state={{ from: location }} replace />;
-    }
+  if (!initialized) return null;
 
-    if (user?.role !== 'ADMIN' && !user?.is_superuser) {
-        return <Navigate to="/" replace />;
-    }
+  if (!isAuthenticated) {
+    console.log("AdminRoute: Not authenticated, redirecting to login");
+    return <Navigate to="/admin/login" state={{ from: location }} replace />;
+  }
 
-    return children;
+  if (user?.role !== "ADMIN" && !user?.is_superuser) {
+    console.log("AdminRoute: Not an admin, redirecting to home");
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
 };

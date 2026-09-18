@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageSquare,
@@ -24,6 +24,15 @@ const ChatbotAssistant = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { user, isAuthenticated } = useSelector((state) => state.auth);
   const { currentReport } = useSelector((state) => state.reports);
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   // Show for patients (case-insensitive check)
   if (!isAuthenticated || user?.role?.toLowerCase() !== "patient") return null;
@@ -121,12 +130,12 @@ const ChatbotAssistant = () => {
             <div className="bg-medic-dark p-6 text-white flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                  <HeartPulse className="w-6 h-6 text-medic-accent" />
+                  <HeartPulse className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex flex-col">
                   <h3 className="font-bold">AI Assistant</h3>
                   {currentReport ? (
-                    <div className="flex items-center gap-1 px-2 py-0.5 bg-medic-accent/20 text-medic-accent rounded-full text-[9px] font-black border border-medic-accent/30 w-fit">
+                    <div className="flex items-center gap-1 px-2 py-0.5 bg-white text-medic-dark rounded-full text-[9px] font-black border border-white/20 w-fit shadow-sm">
                       ACTIVE: REPORT #{currentReport.id}
                     </div>
                   ) : (
@@ -172,6 +181,7 @@ const ChatbotAssistant = () => {
                   </div>
                 </div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
 
             {/* Disclaimer & Input */}

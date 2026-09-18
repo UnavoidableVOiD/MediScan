@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import api from '../../services/api';
+import api, { reportApi } from '../../services/api';
 
 export const fetchReports = createAsyncThunk(
     'reports/fetchAll',
@@ -91,12 +91,26 @@ export const deleteReport = createAsyncThunk(
     }
 );
 
+export const fetchTrends = createAsyncThunk(
+    'reports/fetchTrends',
+    async (_, { rejectWithValue }) => {
+        try {
+            const response = await reportApi.getTrends();
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || 'Failed to fetch trends');
+        }
+    }
+);
+
 
 const initialState = {
     reports: [],
     currentReport: null,
     currentResult: null, // New state for AI analysis
+    trends: [],
     loading: false,
+    trendsLoading: false,
     uploading: false,
     processing: false, // New state for extraction
     correcting: false,
@@ -231,6 +245,18 @@ const reportsSlice = createSlice({
             })
             .addCase(fetchReportResult.rejected, (state, action) => {
                 state.loading = false;
+                state.error = action.payload;
+            })
+            // Fetch Trends
+            .addCase(fetchTrends.pending, (state) => {
+                state.trendsLoading = true;
+            })
+            .addCase(fetchTrends.fulfilled, (state, action) => {
+                state.trendsLoading = false;
+                state.trends = action.payload;
+            })
+            .addCase(fetchTrends.rejected, (state, action) => {
+                state.trendsLoading = false;
                 state.error = action.payload;
             });
     },

@@ -18,6 +18,31 @@ import { useDispatch, useSelector } from "react-redux";
 import { submitVerification } from "../../store/slices/authSlice";
 import { toast } from "react-toastify";
 
+// eslint-disable-next-line no-unused-vars
+const FilePreview = ({ file, onRemove }) => {
+  const isImage = file.type.startsWith("image/");
+  return (
+    <div className="relative group bg-neutral-soft rounded-2xl p-3 flex items-center gap-3 border border-medic-light/20">
+      <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-medic-dark shadow-sm">
+        {isImage ? <ImageIcon size={20} /> : <File size={20} />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-bold text-gray-900 truncate">{file.name}</p>
+        <p className="text-[10px] text-gray-500 uppercase tracking-tight">
+          {(file.size / (1024 * 1024)).toFixed(2)} MB
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={onRemove}
+        className="p-1.5 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-colors"
+      >
+        <X size={16} />
+      </button>
+    </div>
+  );
+};
+
 const VerifyDoctor = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -97,32 +122,6 @@ const VerifyDoctor = () => {
   };
 
   const isSubmitDisabled = !nmcNumber.trim() || !licenseImage || loading;
-
-  const FilePreview = ({ file, onRemove }) => {
-    const isImage = file.type.startsWith("image/");
-    return (
-      <div className="relative group bg-neutral-soft rounded-2xl p-3 flex items-center gap-3 border border-medic-light/20">
-        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-medic-dark shadow-sm">
-          {isImage ? <ImageIcon size={20} /> : <File size={20} />}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-gray-900 truncate">
-            {file.name}
-          </p>
-          <p className="text-[10px] text-gray-500 uppercase tracking-tight">
-            {(file.size / (1024 * 1024)).toFixed(2)} MB
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={onRemove}
-          className="p-1.5 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-colors"
-        >
-          <X size={16} />
-        </button>
-      </div>
-    );
-  };
 
   return (
     <div className="min-h-[calc(100vh-80px)] bg-neutral-background py-12 px-6">

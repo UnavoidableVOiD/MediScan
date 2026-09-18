@@ -127,3 +127,52 @@ class ReportViewSet(viewsets.ModelViewSet):
         
         from .serializers import ReportResultSerializer
         return Response(ReportResultSerializer(report.result).data)
+    @action(detail=False, methods=['get'])
+    def trends(self, request):
+        """
+        API to get historical trends of numerical values from extracted reports.
+        For patients: returns their own trends.
+        For doctors: requires patient_id query param.
+        """
+        user = request.user
+        target_user = user
+
+        if user.role == 'DOCTOR':
+            patient_id = request.query_params.get('patient_id')
+            if not patient_id:
+                return Response({"error": "patient_id is required for doctors."}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                from django.contrib.auth import get_user_model
+                User = get_user_model()
+                target_user = User.objects.get(id=patient_id, role='PATIENT')
+                # Optional: check if doctor is linked to this patient
+            except User.DoesNotExist:
+                return Response({"error": "Patient not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Get all processed reports for the target user
+        reports = Report.objects.filter(user=target_user, status='PROCESSED').order_by('uploaded_at')
+        
+        trend_data = []
+        for report in reports:
+            if hasattr(report, 'extracted_data') and report.extracted_data.final_data:
+                data_point = {
+                    "date": report.uploaded_at.date(),
+                    "report_id": report.id,
+                    "metrics": {}
+                }
+                # Extract numerical values from final_data
+                for key, value in report.extracted_data.final_data.items():
+                    try:
+                        # Try to convert to float to see if it's a metric
+                        if isinstance(value, (int, float)):
+                            data_point["metrics"][key] = value
+                        elif isinstance(value, str):
+                            # Handle strings that look like numbers
+                            cleaned_val = value.replace(',', '').split()[0] # Handle "120 mg/dL"
+                            data_point["metrics"][key] = float(cleaned_val)
+                    except (ValueError, IndexError, TypeError):
+                        continue
+                if data_point["metrics"]:
+                    trend_data.append(data_point)
+        
+        return Response(trend_data)

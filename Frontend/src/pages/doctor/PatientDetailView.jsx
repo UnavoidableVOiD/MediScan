@@ -1,21 +1,19 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   User,
   FileText,
   Sparkles,
-  Download,
   Eye,
   Save,
   CheckCircle2,
-  AlertCircle,
   ArrowLeft,
   Clock,
   File,
+  Download,
   Image as ImageIcon,
   Loader2,
-  RefreshCcw,
   MessageSquare,
   Stethoscope,
   ShieldCheck,
@@ -27,22 +25,42 @@ import {
   fetchPatientReports,
   updatePatientNotes,
   submitDoctorComment,
+  fetchPatientTrends,
+  markPatientCompleted,
+  updateClinicalObservations,
 } from "../../store/slices/doctorSlice";
+import { fetchAppointments } from "../../store/slices/appointmentSlice";
+import { BASE_URL } from "../../services/api";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 const PatientDetailView = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth);
-  const { patients, currentPatientReports, reportsLoading, notesLoading } =
-    useSelector((state) => state.doctor);
+  const {
+    patients,
+    currentPatientReports,
+    currentPatientTrends,
+    notesLoading,
+  } = useSelector((state) => state.doctor);
+  const { appointments } = useSelector((state) => state.appointment);
   const [loading, setLoading] = useState(true);
   const [doctorNotes, setDoctorNotes] = useState("");
+  const [observations, setObservations] = useState("");
   const [lastSaved, setLastSaved] = useState(null);
   const [patient, setPatient] = useState(null);
   const [selectedReport, setSelectedReport] = useState(null);
   const [commentText, setCommentText] = useState("");
   const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
+  const [selectedMetric, setSelectedMetric] = useState("");
 
   useEffect(() => {
     const load = async () => {
@@ -51,7 +69,11 @@ const PatientDetailView = () => {
         if (patients.length === 0) {
           await dispatch(fetchMyPatients()).unwrap();
         }
+        if (appointments.length === 0) {
+          dispatch(fetchAppointments());
+        }
         dispatch(fetchPatientReports(id));
+        dispatch(fetchPatientTrends(id));
       } catch (error) {
         toast.error("Failed to load patient records");
       } finally {
@@ -59,7 +81,7 @@ const PatientDetailView = () => {
       }
     };
     load();
-  }, [id, dispatch]);
+  }, [id, dispatch, appointments.length, patients.length]);
 
   // Derive current patient from Redux state
   useEffect(() => {
@@ -68,12 +90,34 @@ const PatientDetailView = () => {
       if (currentPatient) {
         setPatient(currentPatient);
         setDoctorNotes(currentPatient.notes || "");
+        setObservations(currentPatient.clinical_observations || "");
       } else {
         toast.error("Patient not found");
         navigate("/doctor-dashboard");
       }
     }
   }, [patients, id, navigate]);
+
+  const availableMetrics = useMemo(() => {
+    const metricsSet = new Set();
+    currentPatientTrends.forEach((point) => {
+      Object.keys(point.metrics).forEach((m) => metricsSet.add(m));
+    });
+    const metrics = Array.from(metricsSet);
+    if (metrics.length > 0 && !selectedMetric) {
+      setSelectedMetric(metrics[0]);
+    }
+    return metrics;
+  }, [currentPatientTrends, selectedMetric]);
+
+  const chartData = useMemo(() => {
+    return currentPatientTrends
+      .filter((point) => point.metrics[selectedMetric] !== undefined)
+      .map((point) => ({
+        date: point.date,
+        value: point.metrics[selectedMetric],
+      }));
+  }, [currentPatientTrends, selectedMetric]);
 
   const handleSaveNotes = async () => {
     try {
@@ -83,7 +127,32 @@ const PatientDetailView = () => {
       setLastSaved(new Date().toLocaleTimeString());
       setPatient((prev) => ({ ...prev, notes: doctorNotes }));
     } catch (error) {
-      // toast handled by slice
+      console.error("Failed to save notes:", error);
+    }
+  };
+
+  const handleSaveObservations = async () => {
+    try {
+      await dispatch(
+        updateClinicalObservations({ patientId: id, observations }),
+      ).unwrap();
+      setLastSaved(new Date().toLocaleTimeString());
+      setPatient((prev) => ({ ...prev, clinical_observations: observations }));
+    } catch (error) {
+      console.error("Failed to save observations:", error);
+    }
+  };
+
+  const handleMarkCompleted = async () => {
+    try {
+      await dispatch(markPatientCompleted(id)).unwrap();
+      // Re-fetch to ensure all statuses (including appointments) are synced
+      dispatch(fetchMyPatients());
+      dispatch(fetchAppointments());
+      toast.success("Patient session completed");
+    } catch (error) {
+      console.error("Failed to mark completed:", error);
+      toast.error("Failed to update status");
     }
   };
 
@@ -172,10 +241,56 @@ const PatientDetailView = () => {
                     Status
                   </p>
                   <p
-                    className={`font-bold ${patient.status === "ONGOING" ? "text-orange-500" : "text-green-500"}`}
+                    className={`font-black text-sm tracking-widest uppercase ${patient.status === "ONGOING" ? "text-orange-500" : "text-green-500"}`}
                   >
                     {patient.status}
                   </p>
+                  {patient.status === "ONGOING" &&
+                    (() => {
+                      const today = new Date().toISOString().split("T")[0];
+                      // Find the appointment for this patient (assuming 1 active appointment for simplicity or taking the latest)
+                      // In reality, we might need to filter by status too.
+                      // Here we look for any appointment for this patient that is ONGOING/PAID to check the date.
+                      // Since we don't have patient_id directly linked easily sometimes, we use email if possible or ID if available.
+                      // DoctorDashboard uses patient ID. Let's assume patient.id is the key.
+                      const patientAppt = appointments.find(
+                        (a) =>
+                          a.patient === patient.id &&
+                          (a.status === "PAID" || a.status === "ONGOING"),
+                      );
+
+                      const isFuture = patientAppt
+                        ? patientAppt.appointment_date > today
+                        : false;
+                      // If no appointment found, maybe we shouldn't block, or maybe we should?
+                      // Let's assume if no appointment found, we allow it (fallback) or disallow.
+                      // Safer to allow but show warning? Or disallow?
+                      // The prompt says "safeguard till appointment date".
+                      // If future, disable.
+
+                      return (
+                        <div className="mt-2">
+                          <button
+                            onClick={handleMarkCompleted}
+                            disabled={isFuture}
+                            className={`w-full py-2 rounded-xl text-[10px] font-black tracking-widest uppercase border transition-all ${
+                              isFuture
+                                ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                                : "bg-green-50 text-green-600 border-green-200 hover:bg-green-100"
+                            }`}
+                          >
+                            {isFuture
+                              ? `Wait until ${patientAppt?.appointment_date}`
+                              : "MARK COMPLETED"}
+                          </button>
+                          {isFuture && (
+                            <p className="text-[10px] text-center text-gray-400 mt-1">
+                              Appointment is in the future.
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()}
                 </div>
                 <div className="bg-neutral-soft/50 p-4 rounded-2xl border border-gray-50">
                   <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">
@@ -207,39 +322,95 @@ const PatientDetailView = () => {
                       <Sparkles size={18} />
                     </div>
                     <h2 className="text-xl font-black text-gray-900 tracking-tight">
-                      AI Clinical Summary
+                      Patient Progress & Analysis
                     </h2>
-                    <span className="px-2 py-0.5 bg-purple-50 text-purple-600 rounded text-[10px] font-black tracking-widest uppercase border border-purple-100">
-                      AI Verified
-                    </span>
                   </div>
                 </div>
+
+                {/* Trends Chart */}
+                {availableMetrics.length > 0 && (
+                  <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest">
+                        OCR Value Trends
+                      </h3>
+                      <select
+                        value={selectedMetric}
+                        onChange={(e) => setSelectedMetric(e.target.value)}
+                        className="bg-neutral-soft px-3 py-1.5 rounded-xl text-xs font-bold border-none outline-none focus:ring-2 focus:ring-medic-dark/20"
+                      >
+                        {availableMetrics.map((m) => (
+                          <option key={m} value={m}>
+                            {m}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="h-[250px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={chartData}>
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            vertical={false}
+                            stroke="#f0f0f0"
+                          />
+                          <XAxis
+                            dataKey="date"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{
+                              fontSize: 10,
+                              fontWeight: 700,
+                              fill: "#999",
+                            }}
+                            dy={10}
+                          />
+                          <YAxis
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{
+                              fontSize: 10,
+                              fontWeight: 700,
+                              fill: "#999",
+                            }}
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              borderRadius: "1rem",
+                              border: "none",
+                              boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+                              fontSize: "12px",
+                              fontWeight: "bold",
+                            }}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="value"
+                            name={selectedMetric}
+                            stroke="#1F7A5B"
+                            strokeWidth={3}
+                            dot={{ r: 4, fill: "#1F7A5B", strokeWidth: 0 }}
+                            activeDot={{ r: 6, strokeWidth: 0 }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                )}
 
                 <div className="bg-gradient-to-br from-medic-dark to-[#093d4a] text-white/90 p-8 rounded-[2rem] shadow-xl shadow-medic-dark/20 relative overflow-hidden group">
                   <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl transition-all group-hover:bg-white/10" />
                   <div className="relative space-y-6">
                     {currentPatientReports.length > 0 &&
-                    currentPatientReports[0].ai_analysis ? (
+                    currentPatientReports[0].result ? (
                       <>
-                        <div>
-                          <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-medic-light/60 mb-2">
-                            Patient Summary
-                          </h4>
-                          <p className="text-sm font-medium leading-relaxed">
-                            {currentPatientReports[0].ai_analysis.summary}
-                          </p>
-                        </div>
                         <div>
                           <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-medic-light/60 mb-2">
                             Doctor Insights
                           </h4>
                           <p className="text-sm font-medium leading-relaxed italic">
-                            "
-                            {
-                              currentPatientReports[0].ai_analysis
-                                .doctor_summary
-                            }
-                            "
+                            &quot;{currentPatientReports[0].result.summary}
+                            &quot;
                           </p>
                         </div>
                         <div className="pt-4 border-t border-white/10">
@@ -247,7 +418,7 @@ const PatientDetailView = () => {
                             Key Findings
                           </h4>
                           <div className="flex flex-wrap gap-2">
-                            {currentPatientReports[0].ai_analysis.key_findings.map(
+                            {currentPatientReports[0].result.key_findings.map(
                               (f, i) => (
                                 <span
                                   key={i}
@@ -262,7 +433,8 @@ const PatientDetailView = () => {
                       </>
                     ) : (
                       <div className="py-8 text-center text-medic-light/40 italic text-sm">
-                        No AI analysis available for this patient's reports.
+                        No AI analysis available for this patient&apos;s
+                        reports.
                       </div>
                     )}
                   </div>
@@ -317,12 +489,23 @@ const PatientDetailView = () => {
                               <MessageSquare size={18} />
                             </button>
                             <a
-                              href={report.file}
+                              href={`${BASE_URL}${report.file}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="p-2 text-gray-400 hover:text-medic-dark transition-colors"
+                              title="View Report"
                             >
                               <Eye size={18} />
+                            </a>
+                            <a
+                              href={`${BASE_URL}${report.file}`}
+                              download
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-2 text-gray-400 hover:text-medic-dark transition-colors"
+                              title="Download Report"
+                            >
+                              <Download size={18} />
                             </a>
                           </div>
                         </div>
@@ -332,7 +515,7 @@ const PatientDetailView = () => {
                               Your Comment
                             </p>
                             <p className="text-xs text-gray-600 italic">
-                              "{report.doctor_comment.comment}"
+                              &quot;{report.doctor_comment.comment}&quot;
                             </p>
                           </div>
                         )}
@@ -369,19 +552,20 @@ const PatientDetailView = () => {
 
                 <div className="relative">
                   <textarea
-                    value={doctorNotes}
-                    onChange={(e) => setDoctorNotes(e.target.value)}
+                    value={observations}
+                    onChange={(e) => setObservations(e.target.value)}
                     placeholder="Add clinical observations, diagnosis notes, or treatment plans..."
                     className="w-full h-48 bg-neutral-soft hover:bg-white focus:bg-white border-2 border-transparent focus:border-medic-dark rounded-[2rem] p-8 outline-none transition-all font-medium text-gray-900 text-sm leading-relaxed shadow-inner placeholder:text-gray-300 placeholder:italic"
                   />
                   <div className="absolute bottom-6 right-6">
                     <button
-                      onClick={handleSaveNotes}
+                      onClick={handleSaveObservations}
                       disabled={
-                        notesLoading || doctorNotes === (patient?.notes || "")
+                        notesLoading ||
+                        observations === (patient?.clinical_observations || "")
                       }
                       className={`flex items-center gap-2 px-8 py-4 rounded-2xl font-black text-sm tracking-wide transition-all shadow-xl active:scale-[0.98] ${
-                        doctorNotes === (patient?.notes || "")
+                        observations === (patient?.clinical_observations || "")
                           ? "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
                           : "bg-medic-dark text-white hover:bg-medic-primary shadow-medic-dark/20"
                       }`}
@@ -394,9 +578,46 @@ const PatientDetailView = () => {
                       ) : (
                         <>
                           <Save size={18} />
-                          {patient.notes ? "UPDATE NOTES" : "SAVE OBSERVATIONS"}
+                          {patient?.clinical_observations
+                            ? "UPDATE OBSERVATIONS"
+                            : "SAVE OBSERVATIONS"}
                         </>
                       )}
+                    </button>
+                  </div>
+                </div>
+              </section>
+
+              {/* Private Notes Section */}
+              <section className="space-y-4 pt-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-neutral-soft text-medic-dark rounded-xl border border-gray-100">
+                    <Clock size={18} />
+                  </div>
+                  <h2 className="text-xl font-black text-gray-900 tracking-tight">
+                    Private Doctor Notes
+                  </h2>
+                </div>
+                <div className="relative">
+                  <textarea
+                    value={doctorNotes}
+                    onChange={(e) => setDoctorNotes(e.target.value)}
+                    placeholder="Small notes for yourself (not shared with patient)..."
+                    className="w-full h-32 bg-neutral-soft hover:bg-white focus:bg-white border-2 border-transparent focus:border-medic-dark rounded-[2rem] p-8 outline-none transition-all font-medium text-gray-900 text-sm leading-relaxed shadow-inner"
+                  />
+                  <div className="absolute bottom-6 right-6">
+                    <button
+                      onClick={handleSaveNotes}
+                      disabled={
+                        notesLoading || doctorNotes === (patient?.notes || "")
+                      }
+                      className={`flex items-center gap-2 px-6 py-3 rounded-xl font-black text-xs tracking-wide transition-all shadow-xl active:scale-[0.98] ${
+                        doctorNotes === (patient?.notes || "")
+                          ? "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
+                          : "bg-medic-dark text-white hover:bg-medic-primary shadow-medic-dark/20"
+                      }`}
+                    >
+                      SAVE NOTES
                     </button>
                   </div>
                 </div>

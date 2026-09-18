@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+export const BASE_URL = API_URL.replace('/api', '');
 
 const api = axios.create({
     baseURL: API_URL,
@@ -25,18 +26,36 @@ export const doctorApi = {
     getPatients: () => api.get('/doctor/my-patients/'),
     getPatientReports: (id) => api.get(`/doctor/my-patients/${id}/reports/`),
     updatePatientNotes: (id, notes) => api.post(`/doctor/my-patients/${id}/update_notes/`, { notes }),
+    updateClinicalObservations: (id, observations) => api.post(`/doctor/my-patients/${id}/update_observations/`, { clinical_observations: observations }),
+    markPatientCompleted: (id) => api.post(`/doctor/my-patients/${id}/complete/`),
     addComment: (data) => api.post('/doctor/comments/', data),
+    getPatientTrends: (patientId) => api.get(`/reports/trends/?patient_id=${patientId}`),
+};
+
+export const reportApi = {
+    getTrends: () => api.get('/reports/trends/'),
 };
 
 export const appointmentApi = {
     getAvailability: (doctorId) => api.get(`/doctor/availability/?doctor=${doctorId}`),
     manageAvailability: (data) => api.post('/doctor/availability/', data),
-    syncAvailability: (data) => api.post('/doctor/availability/sync/', data),
+    syncAvailability: (data, doctorId) => {
+        const url = doctorId ? `/doctor/availability/sync/?doctor=${doctorId}` : '/doctor/availability/sync/';
+        return api.post(url, data);
+    },
     deleteAvailability: (id) => api.delete(`/doctor/availability/${id}/`),
     getAppointments: () => api.get('/doctor/appointments/'),
     bookAppointment: (data) => api.post('/doctor/appointments/', data),
     verifyPayment: (appointmentId, data) => api.post(`/doctor/appointments/${appointmentId}/verify_payment/`, data),
-    getRecommendedDoctors: (specialization) => api.get(`/doctor/list/?specialization=${specialization}`),
+    initiateKhaltiPayment: (data) => api.post('/doctor/payment/khalti/init/', data),
+    verifyKhaltiPayment: (data) => api.post('/doctor/payment/khalti/verify/', data),
+    getRecommendedDoctors: (params) => {
+        const queryParams = new URLSearchParams(params).toString();
+        return api.get(`/doctor/list/?${queryParams}`);
+    },
+    getBookedSlots: (doctorId, date) => api.get(`/doctor/appointments/booked_slots/?doctor=${doctorId}&date=${date}`),
+    getDoctorById: (id) => api.get(`/doctor/list/${id}/`),
+    cancelAppointment: (id) => api.post(`/doctor/appointments/${id}/cancel/`),
 };
 
 // Response interceptor to handle token refresh
@@ -47,6 +66,11 @@ api.interceptors.response.use(
 
         // If error is 401 and we haven't tried to refresh yet
         if (error.response?.status === 401 && !originalRequest._retry) {
+            // Skip refresh for checkAuth and logout
+            if (originalRequest.url.includes('/auth/profile/') || originalRequest.url.includes('/auth/logout/')) {
+                return Promise.reject(error);
+            }
+
             originalRequest._retry = true;
 
             try {
@@ -80,6 +104,7 @@ export const adminApi = {
     deleteDoctor: (id) => api.delete(`/admin/doctors/${id}/`),
     updatePatient: (id, data) => api.patch(`/admin/patients/${id}/`, data),
     deletePatient: (id) => api.delete(`/admin/patients/${id}/`),
+    getFinancialStats: () => api.get('/doctor/appointments/admin_financial_stats/'),
 };
 
 export default api;

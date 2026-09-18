@@ -23,7 +23,7 @@ class MedicalChatbot:
         self.script_dir = os.path.dirname(os.path.abspath(__file__))
         self.db_path = os.path.join(self.script_dir, "../../vector_store")
         
-        #HYBRID ENGINE SELECTOR
+        # HYBRID ENGINE SELECTOR
         groq_api_key = os.getenv("GROQ_API_KEY")
         use_cloud = os.getenv("USE_CLOUD_LLM", "False").lower() == "true"
 
@@ -33,7 +33,7 @@ class MedicalChatbot:
             print("\n⚡ MODE: CLOUD (Groq Llama-3)")
             try:
                 self.llm = ChatGroq(
-                    temperature=0.2,
+                    temperature=0.1, 
                     model_name="llama-3.1-8b-instant",
                     api_key=groq_api_key
                 )
@@ -45,16 +45,14 @@ class MedicalChatbot:
             print("\nMODE: LOCAL (Ollama Llama-3.2)")
             try:
                 ollama_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-                
                 self.llm = ChatOllama(
                     model="llama3.2",    
-                    temperature=0.2,      
+                    temperature=0.0,     
                     base_url=ollama_url
                 )
                 print("✓ Connected to Local Ollama.")
             except Exception as e:
                 print(f"!! Ollama Connection Failed: {e}")
-                print("Make sure you ran 'ollama run llama3.2' in terminal!")
 
         print("Loading Embedding Model...")
         self.embeddings = HuggingFaceEmbeddings(
@@ -75,7 +73,6 @@ class MedicalChatbot:
             self.db = None
 
     def _prepare_context(self, query, patient_data):
-        """Helper to prepare prompt inputs"""
         try:
             docs = self.retriever.invoke(query)
             context_text = "\n\n".join([doc.page_content for doc in docs])
@@ -83,26 +80,31 @@ class MedicalChatbot:
             context_text = "No specific medical guidelines found."
 
         patient_context_str = "No specific patient report uploaded."
+        
         if patient_data and isinstance(patient_data, dict):
             patient_context_str = "## CURRENT PATIENT REPORT SUMMARY ##\n"
             
-            # 1. Handle Lab Values
             lab_values = patient_data.get('lab_values', {})
             if lab_values:
                 patient_context_str += "\n### LABORATORY VALUES:\n"
                 for key, val in lab_values.items():
                     patient_context_str += f"- {key}: {val}\n"
             
-            # 2. Handle AI Analysis Results
             analysis = patient_data.get('analysis', {})
             if analysis:
                 patient_context_str += "\n### AI ANALYSIS FINDINGS:\n"
                 patient_context_str += f"- RISK LEVEL: {analysis.get('risk_level', 'N/A')}\n"
-                patient_context_str += f"- SUGGESTED SPECIALIZATION: {analysis.get('specialization', 'N/A')}\n"
                 
                 conditions = analysis.get('conditions', [])
                 if conditions:
-                    patient_context_str += f"- DETECTED CONDITIONS: {', '.join(conditions)}\n"
+                    safe_conditions = []
+                    for c in conditions:
+                        if isinstance(c, dict):
+                            val = c.get('condition') or c.get('prediction') or c.get('name') or str(c)
+                            safe_conditions.append(str(val))
+                        else:
+                            safe_conditions.append(str(c))
+                    patient_context_str += f"- DETECTED CONDITIONS: {', '.join(safe_conditions)}\n"
                 
                 summary = analysis.get('summary', '')
                 if summary:
@@ -113,64 +115,57 @@ class MedicalChatbot:
     def _get_chain(self):
         """Returns the LangChain pipeline"""
         prompt_template = ChatPromptTemplate.from_template("""
-        You are MediScan-Bot, an expert medical assistant.
+        SYSTEM: You are MediScan, a professional AI Medical Assistant.
         
-        <MEDICAL_GUIDELINES>
+        CONTEXT:
         {context}
-        </MEDICAL_GUIDELINES>
         
-        <PATIENT_REPORT_DATA>
+        PATIENT REPORT:
         {patient_info}
-        </PATIENT_REPORT_DATA>
 
-        USER QUESTION: {question}
+        --- INSTRUCTIONS ---
+        1. IF User says "Hi", "Hello": Reply EXACTLY: "Hello! I am MediScan. I have analyzed your report. How can I help you?". DO NOT USE THE INTRODUCTION AFTERWARDS AS YOU ALREADY HAVE GREETED THE USER. 
+        2. IF User asks "How is my report?" or medical questions: 
+           - Answer DIRECTLY. 
+           - DO NOT say "Here is the summary" or use '###' headers. 
+           - Simply state the findings (e.g. "Your Liver values are elevated...").
+        3. IF User asks non-medical (movies, recipes): Reply EXACTLY: "I apologize, but I am specialized only in Medical Analysis."
+        4. ALWAYS end with "Consult a doctor."
 
-        INSTRUCTIONS:
-        1. If the user says "Hello", "Hi", or "Hey", introduce yourself as MediScan AI.
-        2. Base your answer strictly on the MEDICAL GUIDELINES and PATIENT REPORT DATA.
-        3. ALWAYS reference the specific Lab Values or AI Analysis Findings if relevant to the question.
-        4. If the patient's data shows high-risk levels or abnormal findings (as listed in AI Analysis), explicitly mention them.
-        5. Be concise, professional, and empathetic.
-        6. DISCLAIMER: Never give a definitive diagnosis. Always say "This suggests..." or "Consult a doctor for professional clinical advice."
+        --- EXAMPLES ---
+        User: "Hi"
+        MediScan: "Hello! I am MediScan. I have analyzed your report. How can I help you?"
 
-        ANSWER:
+        User: "How is my report?"
+        MediScan: "Your report indicates potential Liver issues due to elevated Alkaline Phosphatase. Your Heart risk is also elevated. Please consult a doctor."
+
+        User: "Who is Batman?"
+        MediScan: "I apologize, but I am specialized only in Medical Analysis."
+
+        ----------------
+
+        User: {question}
+        MediScan:
         """)
         return prompt_template | self.llm | StrOutputParser()
 
     def ask(self, query, patient_data=None):
-        """Synchronous method (returns full string)"""
-        if not self.llm or not self.db:
-            return "System Error: AI unavailable."
-
+        if not self.llm or not self.db: return "System Error: AI unavailable."
         context, patient_info = self._prepare_context(query, patient_data)
         chain = self._get_chain()
-        
-        return chain.invoke({
-            "context": context,
-            "patient_info": patient_info,
-            "question": query
-        })
+        return chain.invoke({"context": context, "patient_info": patient_info, "question": query})
 
     async def stream_ask(self, query, patient_data=None) -> AsyncGenerator[str, None]:
-        """Asynchronous Generator for Streaming Responses"""
         if not self.llm:
             yield "System Error: AI Engine unavailable."
             return
-            
         if not self.db:
             yield "System Error: Knowledge Base unavailable."
             return
 
-        # Prepare context (Blocking IO is acceptable here for simplicity)
         context, patient_info = self._prepare_context(query, patient_data)
         chain = self._get_chain()
-
-        # Stream the chunks
-        async for chunk in chain.astream({
-            "context": context,
-            "patient_info": patient_info,
-            "question": query
-        }):
+        async for chunk in chain.astream({"context": context, "patient_info": patient_info, "question": query}):
             yield chunk
 
 if __name__ == "__main__":

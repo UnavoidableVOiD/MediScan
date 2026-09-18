@@ -64,15 +64,53 @@ export const submitDoctorComment = createAsyncThunk(
     }
 );
 
+export const fetchPatientTrends = createAsyncThunk(
+    'doctor/fetchTrends',
+    async (patientId, { rejectWithValue }) => {
+        try {
+            const response = await doctorApi.getPatientTrends(patientId);
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || 'Failed to fetch trends');
+        }
+    }
+);
+
+export const markPatientCompleted = createAsyncThunk(
+    'doctor/markCompleted',
+    async (patientId, { rejectWithValue }) => {
+        try {
+            const response = await doctorApi.markPatientCompleted(patientId);
+            return { patientId, ...response.data };
+        } catch (error) {
+            return rejectWithValue(error.response?.data || 'Failed to mark as completed');
+        }
+    }
+);
+
+export const updateClinicalObservations = createAsyncThunk(
+    'doctor/updateObservations',
+    async ({ patientId, observations }, { rejectWithValue }) => {
+        try {
+            const response = await doctorApi.updateClinicalObservations(patientId, observations);
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || 'Failed to update observations');
+        }
+    }
+);
+
 // --- Slice ---
 
 const initialState = {
     stats: null,
     patients: [],
     currentPatientReports: [],
+    currentPatientTrends: [],
     loading: false,
     statsLoading: false,
     reportsLoading: false,
+    trendsLoading: false,
     notesLoading: false,
     commentLoading: false,
     error: null,
@@ -137,6 +175,11 @@ const doctorSlice = createSlice({
             .addCase(updatePatientNotes.fulfilled, (state, action) => {
                 state.notesLoading = false;
                 toast.success("Notes saved successfully");
+                // Update in patients array
+                const patient = state.patients.find(p => p.id === parseInt(action.meta.arg.patientId));
+                if (patient) {
+                    patient.notes = action.meta.arg.notes;
+                }
             })
             .addCase(updatePatientNotes.rejected, (state, action) => {
                 state.notesLoading = false;
@@ -158,6 +201,42 @@ const doctorSlice = createSlice({
             .addCase(submitDoctorComment.rejected, (state, action) => {
                 state.commentLoading = false;
                 toast.error(action.payload?.error || "Failed to submit comment");
+            })
+            // Fetch Trends
+            .addCase(fetchPatientTrends.pending, (state) => {
+                state.trendsLoading = true;
+            })
+            .addCase(fetchPatientTrends.fulfilled, (state, action) => {
+                state.trendsLoading = false;
+                state.currentPatientTrends = action.payload;
+            })
+            .addCase(fetchPatientTrends.rejected, (state, action) => {
+                state.trendsLoading = false;
+            })
+            // Mark Completed
+            .addCase(markPatientCompleted.fulfilled, (state, action) => {
+                toast.success("Patient marked as completed");
+                const patient = state.patients.find(p => p.id === parseInt(action.payload.patientId));
+                if (patient) {
+                    patient.status = 'COMPLETED';
+                }
+            })
+            // Update Observations
+            .addCase(updateClinicalObservations.pending, (state) => {
+                state.notesLoading = true;
+            })
+            .addCase(updateClinicalObservations.fulfilled, (state, action) => {
+                state.notesLoading = false;
+                toast.success("Observations updated successfully");
+                // Update in patients array
+                const patient = state.patients.find(p => p.id === parseInt(action.meta.arg.patientId));
+                if (patient) {
+                    patient.clinical_observations = action.meta.arg.observations;
+                }
+            })
+            .addCase(updateClinicalObservations.rejected, (state, action) => {
+                state.notesLoading = false;
+                toast.error(action.payload?.error || "Failed to update observations");
             });
     },
 });

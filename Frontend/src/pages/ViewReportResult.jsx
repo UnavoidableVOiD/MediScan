@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FileText,
@@ -9,7 +9,6 @@ import {
   Activity,
   AlertCircle,
   Heart,
-  Clipboard,
   MessageSquare,
   ChevronDown,
   ChevronUp,
@@ -17,6 +16,7 @@ import {
   Loader2,
   Search,
 } from "lucide-react";
+import { appointmentApi } from "../services/api";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
@@ -27,9 +27,12 @@ import {
   fetchRecommendedDoctors,
   bookAppointment,
   verifyPayment,
+  initiateKhaltiPayment,
   fetchAvailability,
+  fetchAppointments,
 } from "../store/slices/appointmentSlice";
 import { toast } from "react-toastify";
+import { BASE_URL } from "../services/api";
 
 const ViewReportResult = () => {
   const { id } = useParams();
@@ -44,6 +47,7 @@ const ViewReportResult = () => {
     bookingLoading,
     availability,
     availabilityLoading,
+    appointments,
   } = useSelector((state) => state.appointment);
   const { user } = useSelector((state) => state.auth);
   const [openAccordion, setOpenAccordion] = useState("measurements");
@@ -55,22 +59,80 @@ const ViewReportResult = () => {
     if (id) {
       dispatch(fetchReportDetail(id));
       dispatch(fetchReportResult(id));
+      dispatch(fetchAppointments());
     }
   }, [dispatch, id]);
 
+  const hasActiveAppointment = useMemo(() => {
+    return appointments.some((appt) =>
+      ["PAID", "PENDING"].includes(appt.status),
+    );
+  }, [appointments]);
+
   useEffect(() => {
     if (currentResult?.suggested_specialization) {
-      dispatch(fetchRecommendedDoctors(currentResult.suggested_specialization));
+      dispatch(
+        fetchRecommendedDoctors({
+          specialization: currentResult.suggested_specialization,
+          risk_level: currentResult.risk_level,
+        }),
+      );
     }
   }, [dispatch, currentResult]);
 
   const [selectedSlot, setSelectedSlot] = useState(null);
+  const [selectedDate, setSelectedDate] = useState("");
+  const [bookedSlots, setBookedSlots] = useState([]);
 
   useEffect(() => {
     if (selectedDoctor) {
       dispatch(fetchAvailability(selectedDoctor.id));
+      setSelectedDate("");
+      setSelectedSlot(null);
+      setBookedSlots([]);
     }
   }, [dispatch, selectedDoctor]);
+
+  // Fetch booked slots when a date is selected
+  useEffect(() => {
+    if (selectedDoctor && selectedDate) {
+      setSelectedSlot(null);
+      appointmentApi
+        .getBookedSlots(selectedDoctor.id, selectedDate)
+        .then((res) => setBookedSlots(Array.isArray(res.data) ? res.data : []))
+        .catch(() => setBookedSlots([]));
+    }
+  }, [selectedDoctor, selectedDate]);
+
+  // Filter availability for the selected date's day of week
+  const dayOfWeekMap = { 0: 6, 1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5 }; // JS Sunday=0 → backend Monday=0
+  const selectedDayOfWeek = selectedDate
+    ? dayOfWeekMap[new Date(selectedDate + "T00:00:00").getDay()]
+    : null;
+
+  const filteredSlots = useMemo(() => {
+    if (!selectedDate || availability.length === 0) return [];
+
+    // 1. Check for specific date overrides
+    const dateSpecificSlots = availability.filter(
+      (s) => s.date === selectedDate,
+    );
+    if (dateSpecificSlots.length > 0) {
+      return dateSpecificSlots;
+    }
+
+    // 2. Fallback to day_of_week
+    return availability.filter(
+      (s) => Number(s.day_of_week) === selectedDayOfWeek && !s.date,
+    );
+  }, [selectedDate, availability, selectedDayOfWeek]);
+  const isSlotBooked = (slot) =>
+    bookedSlots.some(
+      (b) =>
+        b.start_time.slice(0, 5) === slot.start_time.slice(0, 5) &&
+        b.end_time.slice(0, 5) === slot.end_time.slice(0, 5),
+    );
+  const todayStr = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
     if (error) {
@@ -159,7 +221,8 @@ const ViewReportResult = () => {
 
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
             <a
-              href={`http://localhost:8000${currentReport?.file}`}
+              href={`${BASE_URL}${currentReport?.file}`}
+              download
               target="_blank"
               rel="noopener noreferrer"
               className="w-full sm:w-auto px-6 py-3 bg-white border-2 border-medic-dark text-medic-dark rounded-xl font-bold hover:bg-medic-light/10 transition-all flex items-center justify-center gap-2"
@@ -209,9 +272,16 @@ const ViewReportResult = () => {
               </div>
             </div>
 
-            <p className="text-gray-600 leading-relaxed text-lg italic">
-              "{currentResult?.summary}"
-            </p>
+            <div className="bg-medic-light/10 p-6 rounded-2xl border border-medic-dark/10">
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-medic-dark/60 mb-2">
+                {user?.role === "DOCTOR"
+                  ? "Clinical Insights for Physician"
+                  : "AI Medical Summary"}
+              </h4>
+              <p className="text-gray-800 leading-relaxed text-lg italic font-medium">
+                "{currentResult?.summary}"
+              </p>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {currentResult?.key_findings?.map((finding, i) => (
@@ -227,6 +297,37 @@ const ViewReportResult = () => {
               ))}
             </div>
           </motion.div>
+
+          {/* Doctor's Comment Section */}
+          {currentReport?.doctor_comment && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-medic-light/10 rounded-[2rem] p-8 border border-medic-dark/10 shadow-sm space-y-4 relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 p-8 opacity-5">
+                <MessageSquare className="w-32 h-32 text-medic-dark" />
+              </div>
+              <div className="relative z-10">
+                <h2 className="text-xl font-black text-gray-900 flex items-center gap-3 mb-4">
+                  <MessageSquare className="w-6 h-6 text-medic-primary" />
+                  Doctor's Note
+                </h2>
+                <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl border border-medic-dark/5">
+                  <p className="text-gray-800 text-lg leading-relaxed font-medium italic">
+                    "{currentReport.doctor_comment.comment}"
+                  </p>
+                  <div className="mt-4 flex items-center justify-end gap-2 text-xs font-bold text-medic-dark uppercase tracking-wider">
+                    <span>
+                      - Dr.{" "}
+                      {currentReport.doctor_comment.doctor_name || "Doctor"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
           {/* Expandable Sections */}
           <div className="space-y-4">
@@ -280,265 +381,90 @@ const ViewReportResult = () => {
               </AnimatePresence>
             </div>
 
-            {/* 2. Important Measurements */}
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-              <button
-                onClick={() =>
-                  setOpenAccordion(
-                    openAccordion === "measurements" ? null : "measurements",
-                  )
-                }
-                className="w-full px-8 py-6 flex items-center justify-between hover:bg-neutral-soft/30 transition-colors"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-medic-light/50 text-medic-dark rounded-xl flex items-center justify-center">
-                    <Clipboard className="w-5 h-5" />
-                  </div>
-                  <span className="text-lg font-bold text-gray-900">
-                    Important Measurements
-                  </span>
-                </div>
-                {openAccordion === "measurements" ? (
-                  <ChevronUp className="w-5 h-5 text-gray-400" />
-                ) : (
-                  <ChevronDown className="w-5 h-5 text-gray-400" />
-                )}
-              </button>
-              <AnimatePresence>
-                {openAccordion === "measurements" && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="px-8 pb-8"
-                  >
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left">
-                        <thead>
-                          <tr className="border-b border-gray-100 text-xs font-bold text-gray-400 uppercase tracking-widest">
-                            <th className="py-4">Parameter</th>
-                            <th className="py-4">Result</th>
-                            <th className="py-4">Ref. Range</th>
-                            <th className="py-4 text-right">Status</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                          {currentReport?.extracted_data?.final_data?.tests?.map(
-                            (test, i) => (
-                              <tr key={i}>
-                                <td className="py-4 font-bold text-gray-900">
-                                  {test.name}
-                                </td>
-                                <td className="py-4 text-medic-dark font-bold">
-                                  {test.value}{" "}
-                                  <span className="text-xs text-gray-400">
-                                    {test.unit}
-                                  </span>
-                                </td>
-                                <td className="py-4 text-sm text-gray-500">
-                                  {test.reference_range || "--"}
-                                </td>
-                                <td className="py-4 text-right">
-                                  <span
-                                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                      test.status === "Normal"
-                                        ? "bg-green-100 text-green-700"
-                                        : "bg-orange-100 text-orange-700"
-                                    }`}
-                                  >
-                                    {test.status}
-                                  </span>
-                                </td>
-                              </tr>
-                            ),
-                          )}
-                        </tbody>
-                      </table>
+            {/* 2. Extracted Data (OCR) - Doctor Only */}
+            {user?.role === "DOCTOR" && currentReport?.extracted_data && (
+              <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+                <button
+                  onClick={() =>
+                    setOpenAccordion(openAccordion === "ocr" ? null : "ocr")
+                  }
+                  className="w-full px-8 py-6 flex items-center justify-between hover:bg-neutral-soft/30 transition-colors"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-green-50 text-green-500 rounded-xl flex items-center justify-center">
+                      <FileText className="w-5 h-5" />
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* 3. Risk Indicators & AI Recommendations */}
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-              <button
-                onClick={() =>
-                  setOpenAccordion(openAccordion === "risk" ? null : "risk")
-                }
-                className="w-full px-8 py-6 flex items-center justify-between hover:bg-neutral-soft/30 transition-colors"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center">
-                    <ShieldAlert className="w-5 h-5" />
+                    <span className="text-lg font-bold text-gray-900">
+                      Extracted OCR Values
+                    </span>
                   </div>
-                  <span className="text-lg font-bold text-gray-900">
-                    Risk Assessment & Recommendations
-                  </span>
-                </div>
-                {openAccordion === "risk" ? (
-                  <ChevronUp className="w-5 h-5 text-gray-400" />
-                ) : (
-                  <ChevronDown className="w-5 h-5 text-gray-400" />
-                )}
-              </button>
-              <AnimatePresence>
-                {openAccordion === "risk" && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="px-8 pb-8 space-y-8"
-                  >
-                    <div className="flex flex-col sm:flex-row items-center gap-6 p-6 bg-gray-50 rounded-[2rem] border border-gray-100">
-                      <div className="space-y-1 w-full sm:w-auto">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block text-center sm:text-left">
-                          Analyzed Risk Level
-                        </span>
-                        <div className="flex flex-col sm:flex-row items-center gap-4">
-                          <span
-                            className={`w-full sm:w-auto px-6 py-2 rounded-2xl text-lg font-bold text-center ${
-                              currentResult?.risk_level === "Low"
-                                ? "bg-green-100 text-green-700"
-                                : currentResult?.risk_level === "Medium"
-                                  ? "bg-orange-100 text-orange-700"
-                                  : "bg-red-100 text-red-700"
-                            }`}
+                  {openAccordion === "ocr" ? (
+                    <ChevronUp className="w-5 h-5 text-gray-400" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-gray-400" />
+                  )}
+                </button>
+                <AnimatePresence>
+                  {openAccordion === "ocr" && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="px-8 pb-8"
+                    >
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        {Object.entries(
+                          currentReport.extracted_data.final_data || {},
+                        ).map(([key, val], i) => (
+                          <div
+                            key={i}
+                            className="p-4 bg-neutral-soft rounded-2xl border border-gray-100"
                           >
-                            {currentResult?.risk_level} Risk
-                          </span>
-                        </div>
+                            <span className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
+                              {key}
+                            </span>
+                            <span className="font-bold text-gray-900">
+                              {String(val)}
+                            </span>
+                          </div>
+                        ))}
                       </div>
-                      <p className="text-sm text-gray-600 leading-relaxed italic text-center sm:text-left flex-1">
-                        "Based on the clinical markers extracted from your
-                        report, our AI has categorized your health status as{" "}
-                        <strong>{currentResult?.risk_level} Risk</strong>. This
-                        assessment helps prioritize medical attention."
-                      </p>
-                    </div>
-
-                    <div className="space-y-4">
-                      <h4 className="text-sm font-black text-gray-400 uppercase tracking-tighter px-2">
-                        AI-Powered Recommendations
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {currentResult?.risk_level === "High" ? (
-                          <>
-                            <div className="p-5 bg-red-50 border border-red-100 rounded-2xl flex gap-4">
-                              <AlertCircle className="w-6 h-6 text-red-500 shrink-0" />
-                              <div className="space-y-1">
-                                <h5 className="font-bold text-red-900">
-                                  Urgent Consultation
-                                </h5>
-                                <p className="text-xs text-red-700/80">
-                                  Schedule an appointment with a{" "}
-                                  {currentResult?.suggested_specialization ||
-                                    "specialist"}{" "}
-                                  within the next 24-48 hours.
-                                </p>
-                              </div>
-                            </div>
-                            <div className="p-5 bg-amber-50 border border-amber-100 rounded-2xl flex gap-4">
-                              <Activity className="w-6 h-6 text-amber-500 shrink-0" />
-                              <div className="space-y-1">
-                                <h5 className="font-bold text-amber-900">
-                                  Monitor Symptoms
-                                </h5>
-                                <p className="text-xs text-amber-700/80">
-                                  Track any physical changes or discomfort and
-                                  report them immediately to your doctor.
-                                </p>
-                              </div>
-                            </div>
-                          </>
-                        ) : currentResult?.risk_level === "Medium" ? (
-                          <>
-                            <div className="p-5 bg-orange-50 border border-orange-100 rounded-2xl flex gap-4">
-                              <Calendar className="w-6 h-6 text-orange-500 shrink-0" />
-                              <div className="space-y-1">
-                                <h5 className="font-bold text-orange-900">
-                                  Follow-up Appointment
-                                </h5>
-                                <p className="text-xs text-orange-700/80">
-                                  Consult with a{" "}
-                                  {currentResult?.suggested_specialization ||
-                                    "specialist"}{" "}
-                                  this week to discuss these results.
-                                </p>
-                              </div>
-                            </div>
-                            <div className="p-5 bg-blue-50 border border-blue-100 rounded-2xl flex gap-4">
-                              <TrendingUp className="w-6 h-6 text-blue-500 shrink-0" />
-                              <div className="space-y-1">
-                                <h5 className="font-bold text-blue-900">
-                                  Lifestyle Adjustments
-                                </h5>
-                                <p className="text-xs text-blue-700/80">
-                                  Review your diet and activity levels based on
-                                  the abnormal parameters detected.
-                                </p>
-                              </div>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="p-5 bg-green-50 border border-green-100 rounded-2xl flex gap-4">
-                              <CheckCircle2 className="w-6 h-6 text-green-500 shrink-0" />
-                              <div className="space-y-1">
-                                <h5 className="font-bold text-green-900">
-                                  Maintain Routine
-                                </h5>
-                                <p className="text-xs text-green-700/80">
-                                  Continue your current healthy habits. Follow
-                                  up as per your regular check-up schedule.
-                                </p>
-                              </div>
-                            </div>
-                            <div className="p-5 bg-blue-50 border border-blue-100 rounded-2xl flex gap-4">
-                              <Heart className="w-6 h-6 text-blue-500 shrink-0" />
-                              <div className="space-y-1">
-                                <h5 className="font-bold text-blue-900">
-                                  Preventive Care
-                                </h5>
-                                <p className="text-xs text-blue-700/80">
-                                  Focus on balanced nutrition and hydration to
-                                  keep these markers in their optimal range.
-                                </p>
-                              </div>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Right Column: Preview & AI Chat */}
         <div className="space-y-8">
           {/* AI Chat Panel */}
-          <div className="bg-medic-dark rounded-[2rem] p-8 text-white space-y-6 relative overflow-hidden">
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            className="bg-gradient-to-tr from-[#1F7A5B] via-[#00A86B] to-[#4ADE80] rounded-[2rem] p-8 text-white space-y-6 relative overflow-hidden shadow-[0_0_40px_rgba(0,168,107,0.3)] border border-white/20"
+          >
             <div className="relative z-10 flex flex-col gap-6">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-medic-light/20 rounded-2xl flex items-center justify-center">
-                  <MessageSquare className="w-6 h-6 text-medic-accent" />
+                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                  <MessageSquare className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg leading-none">
-                    AI Health Expert
+                  <h3 className="font-bold text-lg leading-none mb-1">
+                    Ask MediScan AI
                   </h3>
-                  <span className="text-xs text-medic-accent/70 font-bold uppercase tracking-widest">
-                    Active Now
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#4ADE80] animate-pulse shadow-[0_0_8px_#4ADE80]" />
+                    <span className="text-[10px] text-white/90 font-bold uppercase tracking-widest">
+                      Health Expert Online
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <p className="text-sm text-medic-light/80 leading-relaxed font-medium">
-                "I've analyzed your results. Would you like me to explain these
-                measurements in simpler terms?"
+              <p className="text-sm text-white/95 leading-relaxed font-semibold italic">
+                "I've just scanned your medical report. Ready to uncover what
+                these numbers mean for your health in plain English?"
               </p>
 
               <button
@@ -548,16 +474,16 @@ const ViewReportResult = () => {
                   );
                   if (chatbotBtn) chatbotBtn.click();
                 }}
-                className="w-full py-4 bg-medic-accent text-medic-dark rounded-2xl font-bold hover:bg-medic-accent/90 transition-all active:scale-95 shadow-lg shadow-black/20"
+                className="w-full py-4 bg-white text-[#1F7A5B] rounded-2xl font-extrabold hover:bg-medic-light transition-all active:scale-95 shadow-xl shadow-black/10 flex items-center justify-center gap-2"
               >
-                Explain in Simple Terms
+                Let's Simplify My Report
               </button>
 
               <div className="p-4 bg-white/5 rounded-2xl border border-white/10 space-y-2">
-                <div className="flex items-center gap-2 text-xs font-bold text-medic-accent uppercase tracking-widest">
+                <div className="text-sm text-white/95 leading-relaxed font-semibold italic">
                   <AlertCircle className="w-3.5 h-3.5" /> Medical Disclaimer
                 </div>
-                <p className="text-[10px] text-medic-light/40 leading-normal">
+                <p className="text-sm text-white/95 leading-relaxed font-semibold italic">
                   This analysis is AI-generated and not a medical diagnosis.
                   Consult a certified doctor for medical advice regarding your
                   healthcare.
@@ -567,7 +493,7 @@ const ViewReportResult = () => {
 
             {/* Decorative Background Icon */}
             <Heart className="absolute -right-10 -bottom-10 w-40 h-40 text-white/5 rotate-12" />
-          </div>
+          </motion.div>
 
           {/* Recommended Doctors Section */}
           {currentResult && (
@@ -578,6 +504,20 @@ const ViewReportResult = () => {
               </h3>
 
               <div className="space-y-4">
+                {hasActiveAppointment && (
+                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                    <p className="text-sm text-amber-800 font-medium">
+                      You already have an active appointment or payment pending.
+                      Please visit your{" "}
+                      <Link to="/appointments" className="underline font-bold">
+                        appointments
+                      </Link>{" "}
+                      to manage it.
+                    </p>
+                  </div>
+                )}
+
                 {recommendedLoading ? (
                   <div className="flex justify-center py-10">
                     <Loader2 className="w-8 h-8 text-medic-dark animate-spin" />
@@ -608,12 +548,20 @@ const ViewReportResult = () => {
                         </span>
                         <button
                           onClick={() => {
+                            if (hasActiveAppointment) return;
                             setSelectedDoctor(doc);
                             setIsBookingModalOpen(true);
                           }}
-                          className="px-4 py-2 bg-medic-dark text-white rounded-lg text-xs font-bold hover:bg-medic-primary transition-all"
+                          disabled={hasActiveAppointment}
+                          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                            hasActiveAppointment
+                              ? "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"
+                              : "bg-medic-dark text-white hover:bg-medic-primary shadow-sm"
+                          }`}
                         >
-                          Book Now
+                          {hasActiveAppointment
+                            ? "Booking Restricted"
+                            : "Book Now"}
                         </button>
                       </div>
                     </div>
@@ -678,26 +626,72 @@ const ViewReportResult = () => {
                   </div>
 
                   <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest px-2">
+                      Select Date
+                    </label>
+                    <input
+                      type="date"
+                      value={selectedDate}
+                      min={todayStr}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      className="w-full p-3 bg-neutral-soft rounded-2xl border border-gray-100 text-sm font-bold text-medic-dark outline-none focus:border-medic-dark/30 transition-all"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
                     <label className="text-xs font-bold text-gray-400 uppercase tracking-widest px-2 text-center block">
                       Available Slots
+                      {selectedDate && selectedDayOfWeek !== null && (
+                        <span className="ml-2 text-medic-dark normal-case">
+                          (
+                          {
+                            [
+                              "Monday",
+                              "Tuesday",
+                              "Wednesday",
+                              "Thursday",
+                              "Friday",
+                              "Saturday",
+                              "Sunday",
+                            ][selectedDayOfWeek]
+                          }
+                          )
+                        </span>
+                      )}
                     </label>
                     <div className="flex flex-wrap justify-center gap-2">
-                      {availabilityLoading ? (
+                      {!selectedDate ? (
+                        <p className="text-xs text-gray-400 italic">
+                          Please select a date first.
+                        </p>
+                      ) : availabilityLoading ? (
                         <Loader2 className="w-5 h-5 animate-spin text-medic-dark" />
-                      ) : availability.length > 0 ? (
-                        availability.map((slot, i) => (
-                          <button
-                            key={i}
-                            onClick={() => setSelectedSlot(slot)}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${selectedSlot === slot ? "bg-medic-dark text-white border-medic-dark shadow-md scale-105" : "bg-neutral-soft text-gray-600 border-gray-100 hover:border-medic-dark/20"}`}
-                          >
-                            {slot.start_time.slice(0, 5)} -{" "}
-                            {slot.end_time.slice(0, 5)}
-                          </button>
-                        ))
+                      ) : filteredSlots.length > 0 ? (
+                        filteredSlots.map((slot, i) => {
+                          const booked = isSlotBooked(slot);
+                          return (
+                            <button
+                              key={i}
+                              disabled={booked}
+                              onClick={() => !booked && setSelectedSlot(slot)}
+                              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+                                booked
+                                  ? "bg-red-50 text-red-400 border-red-200 cursor-not-allowed line-through"
+                                  : selectedSlot === slot
+                                    ? "bg-medic-dark text-white border-medic-dark shadow-md scale-105"
+                                    : "bg-neutral-soft text-gray-600 border-gray-100 hover:border-medic-dark/20"
+                              }`}
+                              title={booked ? "Already booked" : ""}
+                            >
+                              {slot.start_time.slice(0, 5)} -{" "}
+                              {slot.end_time.slice(0, 5)}
+                              {booked && " ✕"}
+                            </button>
+                          );
+                        })
                       ) : (
                         <p className="text-xs text-gray-400 italic">
-                          No slots available for this week.
+                          No slots available on this day.
                         </p>
                       )}
                     </div>
@@ -725,14 +719,14 @@ const ViewReportResult = () => {
                   </button>
                   <button
                     onClick={async () => {
+                      if (!selectedDate)
+                        return toast.warning("Please select a date");
                       if (!selectedSlot)
                         return toast.warning("Please select a time slot");
                       try {
                         const apptData = {
                           doctor: selectedDoctor.id,
-                          appointment_date: new Date()
-                            .toISOString()
-                            .split("T")[0], // Placeholder: Today
+                          appointment_date: selectedDate,
                           start_time: selectedSlot.start_time,
                           end_time: selectedSlot.end_time,
                           notes: appointmentNote,
@@ -741,61 +735,49 @@ const ViewReportResult = () => {
                           bookAppointment(apptData),
                         ).unwrap();
 
-                        // Initialize Khalti
-                        const config = {
-                          publicKey:
-                            import.meta.env.VITE_KHALTI_PUBLIC_KEY ||
-                            "test_public_key_xxxx",
-                          productIdentity: appt.id.toString(),
-                          productName: `Consultation with Dr. ${selectedDoctor.first_name}`,
-                          productUrl: window.location.href,
-                          eventHandler: {
-                            onSuccess(payload) {
-                              dispatch(
-                                verifyPayment({
-                                  appointmentId: appt.id,
-                                  data: {
-                                    token: payload.token,
-                                    amount: payload.amount,
-                                  },
-                                }),
-                              ).then(() => {
-                                setIsBookingModalOpen(false);
-                                navigate("/dashboard");
-                              });
-                            },
-                            onError(error) {
-                              console.error(error);
-                              toast.error("Khalti payment failed");
-                            },
-                            onClose() {
-                              console.log("widget is closing");
-                            },
-                          },
-                          paymentPreference: [
-                            "KHALTI",
-                            "EBANKING",
-                            "MOBILE_BANKING",
-                            "CONNECT_IPS",
-                            "SCT",
-                          ],
-                        };
-                        const checkout = new window.KhaltiCheckout(config);
-                        checkout.show({
-                          amount:
-                            parseInt(selectedDoctor.consultation_fee) * 100,
-                        });
-                      } catch (err) {
-                        toast.error(err?.message || "Booking failed");
+                        // Initialize Khalti Payment (Redirect Flow)
+                        try {
+                          const paymentData = {
+                            appointmentId: appt.id,
+                            returnUrl: `${window.location.origin}/payment/success`,
+                            websiteUrl: window.location.origin,
+                          };
+
+                          const khaltiResponse = await dispatch(
+                            initiateKhaltiPayment(paymentData),
+                          ).unwrap();
+
+                          if (khaltiResponse.payment_url) {
+                            window.location.href = khaltiResponse.payment_url;
+                          } else {
+                            toast.error(
+                              "Failed to get payment URL from Khalti",
+                            );
+                          }
+                        } catch (paymentError) {
+                          console.error(
+                            "Payment initiation failed:",
+                            paymentError,
+                          );
+                          toast.error(
+                            "Failed to initiate payment. Please try again.",
+                          );
+                        }
+                      } catch (error) {
+                        console.error("Booking error:", error);
+                        // Error toast is handled by slice
                       }
                     }}
                     disabled={bookingLoading}
-                    className="flex-1 py-4 bg-medic-dark text-white rounded-2xl font-bold hover:bg-medic-primary transition-all flex items-center justify-center gap-2"
+                    className="flex-1 py-4 bg-medic-dark text-white rounded-2xl font-bold hover:bg-medic-primary transition-all shadow-lg shadow-medic-dark/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {bookingLoading ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Processing...
+                      </>
                     ) : (
-                      "Pay & Book"
+                      "Confirm & Pay"
                     )}
                   </button>
                 </div>

@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
 @theme {
-  --color-medic-dark: #1F7A5B;
-  --color-medic-primary: #2A9D78;
-  --color-medic-light: #E6F4EF;
-  --color-medic-accent: #00A86B;
-  --color-neutral-background: #F9FAFB;
-  --color-neutral-soft: #F3F4F6;
+  --color-medic-dark: #1f7a5b;
+  --color-medic-primary: #2a9d78;
+  --color-medic-light: #e6f4ef;
+  --color-medic-accent: #00a86b;
+  --color-neutral-background: #f9fafb;
+  --color-neutral-soft: #f3f4f6;
 
   --font-heading: "Inter", "Poppins", sans-serif;
   --font-body: "Inter", sans-serif;
@@ -16,6 +16,8 @@
   background-color: var(--color-neutral-background);
   color: #1a1a1a;
   font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {

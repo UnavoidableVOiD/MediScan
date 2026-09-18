@@ -21,6 +21,7 @@ class DoctorPatientLink(models.Model):
     )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ONGOING')
     notes = models.TextField(null=True, blank=True)
+    clinical_observations = models.TextField(null=True, blank=True, help_text="Medical notes and observations by the doctor")
     linked_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -106,18 +107,23 @@ class DoctorAvailability(models.Model):
         related_name='availability_slots',
         limit_choices_to={'role': 'DOCTOR'}
     )
-    day_of_week = models.IntegerField(choices=DAY_CHOICES)
+    day_of_week = models.IntegerField(choices=DAY_CHOICES, null=True, blank=True)
+    date = models.DateField(null=True, blank=True)
     start_time = models.TimeField()
     end_time = models.TimeField()
+    label = models.CharField(max_length=50, null=True, blank=True, help_text="Custom label for this slot (e.g., 'Morning Clinic')")
     is_active = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = "Doctor Availability"
         verbose_name_plural = "Doctor Availabilities"
-        unique_together = ('doctor', 'day_of_week', 'start_time', 'end_time')
+        ordering = ['date', 'day_of_week', 'start_time']
 
     def __str__(self):
-        return f"{self.doctor.email} - {self.get_day_of_week_display()} ({self.start_time}-{self.end_time})"
+        label_str = f" ({self.label})" if self.label else ""
+        if self.date:
+            return f"{self.doctor.email} - {self.date} ({self.start_time}-{self.end_time}){label_str}"
+        return f"{self.doctor.email} - {self.get_day_of_week_display()} ({self.start_time}-{self.end_time}){label_str}"
 
 
 class Appointment(models.Model):
@@ -146,10 +152,16 @@ class Appointment(models.Model):
     
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     notes = models.TextField(null=True, blank=True)
+    clinical_observations = models.TextField(null=True, blank=True, help_text="Doctor's clinical observations during this visit")
     
     # Khalti / Payment tracking
     payment_id = models.CharField(max_length=100, null=True, blank=True, help_text="Transaction ID from Khalti")
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    refund_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    
+    # Revenue splits
+    doctor_revenue = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Net revenue for doctor")
+    admin_revenue = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Commission for admin (25%)")
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

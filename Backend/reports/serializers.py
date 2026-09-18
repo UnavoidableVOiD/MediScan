@@ -7,6 +7,21 @@ class ReportResultSerializer(serializers.ModelSerializer):
         model = ReportResult
         fields = ['id', 'summary', 'doctor_summary', 'key_findings', 'conditions', 'risk_level', 'confidence_score', 'suggested_specialization', 'created_at']
 
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            if request.user.role == 'DOCTOR':
+                # Doctors only see doctor_summary, mapped to 'summary' for frontend simplicity or kept as is?
+                # The user said "doctor must be served appropriate doctor summary". 
+                # Let's keep doctor_summary but also make 'summary' return doctor_summary if requested.
+                ret['summary'] = ret.get('doctor_summary')
+                # Optional: Remove doctor_summary if we want to be clean
+            elif request.user.role == 'PATIENT':
+                # Patients should NOT see doctor_summary
+                ret.pop('doctor_summary', None)
+        return ret
+
 class ExtractedDataSerializer(serializers.ModelSerializer):
     class Meta:
         model = ExtractedReportData

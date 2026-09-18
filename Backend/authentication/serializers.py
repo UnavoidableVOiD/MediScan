@@ -154,8 +154,21 @@ class GoogleLoginSerializer(serializers.Serializer):
 
 class UserSerializer(serializers.ModelSerializer):
     phone_number = PhoneNumberField()
+    age = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'phone_number', 'role', 'specialization', 'doctor_status', 'consultation_fee']
-        read_only_fields = ['email', 'role', 'doctor_status']
+        fields = ['first_name', 'last_name', 'email', 'phone_number', 'date_of_birth', 'age', 'role', 'specialization', 'doctor_status', 'consultation_fee', 'experience', 'bio', 'is_staff', 'is_superuser']
+        read_only_fields = ['email', 'role', 'doctor_status', 'is_staff', 'is_superuser', 'age']
+
+    def get_age(self, obj):
+        if obj.date_of_birth:
+            today = now().date()
+            return today.year - obj.date_of_birth.year - ((today.month, today.day) < (obj.date_of_birth.month, obj.date_of_birth.day))
+        return None
+
+    def validate_phone_number(self, value):
+        user = self.context['request'].user
+        if User.objects.exclude(pk=user.pk).filter(phone_number=value).exists():
+            raise serializers.ValidationError("This phone number is already in use.")
+        return value
