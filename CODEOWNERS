@@ -1,0 +1,12 @@
+# Review routing. packages/clinical needs both ML and Backend owners.
+# Replace the placeholders with GitHub handles.
+/packages/clinical/   @ml-owner @backend-owner
+/packages/contracts/  @backend-owner @frontend-owner
+/apps/api/            @backend-owner
+/apps/worker/         @backend-owner
+/apps/inference/      @ml-owner
+/apps/llm_gateway/    @llm-owner
+/apps/web/            @frontend-owner
+/ml/                  @ml-owner
+/infra/               @backend-owner
+/docs/adr/            @ml-owner @backend-owner @llm-owner @frontend-owner

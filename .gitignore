@@ -1,37 +1,69 @@
+# --- secrets & local config (never committed) ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# --- python ---
 __pycache__/
 *.py[cod]
+.venv/
 venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+htmlcov/
+.coverage
+dist/
+build/
+*.egg-info/
+
+# --- node ---
+node_modules/
+apps/web/dist/
+apps/web/.vite/
+
+# --- data & artifacts (live in object storage, never in git) ---
+ml/data/**
+!ml/data/README.md
+!ml/data/.gitkeep
+ml/dist/
+ml/golden_set/pdfs/**
+!ml/golden_set/pdfs/README.md
+*.pkl
+*.joblib
+*.faiss
+*.onnx
+
+# --- infra ---
+infra/.volumes/
+
+# --- os / editor ---
 .DS_Store
-
-.env
-ML/.env
-
-ML/datasets/
-ML/temp_*.pdf
-
 .vscode/
 .idea/
 
-# frontend dependencies
-Frontend/node_modules/
-Frontend/dist/
-frontend/node_modules/
-node_modules/
+# --- legacy tree (kept for reference during migration; same rules as before) ---
+legacy/**/.env
+legacy/ML/datasets/
+legacy/ML/reports/
+legacy/ML/temp_*.pdf
+legacy/ML/garbage.pdf
+legacy/ML/final_benchmark_data.csv
+legacy/ML/benchmark_study.py
+legacy/ML/benchmark_results.csv
+legacy/ML/check_tree.py
+legacy/ML/src/chat_payload.json
+legacy/ML/src/payload.json
+legacy/ML/test_pipeline.txt
+legacy/ML/docker_*.json
+legacy/Backend/db.sqlite3
+legacy/Backend/media/
+legacy/frontend/node_modules/
+legacy/frontend/dist/
 
-
-#ml dependencies
-/ML/final_benchmark_data.csv
-/ML/benchmark_study.py
-/ML/check_tree.py
-
-/ML/benchmark_results.csv
-ML/reports/
-
-ML/src/chat_payload.json
-ML/src/payload.json
-ML/test_pipeline.txt
-ML/docker_chat.json
-ML/docker_payload.json
-ML/garbage.pdf
-# Separate reference project with its own git repo
+# unrelated reference project
 Booking/
+legacy/Backend/reports/*.pdf
+legacy/Backend/doctor_licenses/
