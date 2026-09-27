@@ -1,6 +1,11 @@
 ## What
 <!-- one paragraph; link the finding ID (e.g. ML-2) or ADR if relevant -->
 
+## Target & review (see CONTRIBUTING.md)
+- [ ] Opened from a feature/bugfix/hotfix branch, targeting `dev` (or `prod` for a release/hotfix)
+- [ ] At least one approval from someone other than the author before merge
+- [ ] Into `prod`: on the release day (or an authorised exception) and tagged `vMAJOR.MINOR.PATCH` after merge
+
 ## CUPID check
 - [ ] **Composable** — new code exposes small typed interfaces; no hidden I/O or globals
 - [ ] **Unix** — this change stays inside one service/module's stated job (see its README)

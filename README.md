@@ -97,6 +97,8 @@ only infrastructure runs in Docker.
 
 ## How we work
 
+- **Branches, PRs and releases** follow [CONTRIBUTING.md](CONTRIBUTING.md): no direct pushes to `dev` or
+  `prod`, every PR needs an approval from someone other than the author, and every `prod` merge is tagged.
 - **CUPID** over SOLID — every module is judged on being Composable, Unix-like, Predictable, Idiomatic and
   Domain-based. The PR template carries the checklist.
 - **Contracts first** — HTTP boundaries have committed OpenAPI specs; the web client is generated; CI fails
