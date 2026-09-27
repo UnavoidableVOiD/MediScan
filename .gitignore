@@ -67,3 +67,6 @@ legacy/frontend/dist/
 Booking/
 legacy/Backend/reports/*.pdf
 legacy/Backend/doctor_licenses/
+
+# generated with screenshots (>1 MB); rebuild with `make doc-frontend`
+docs/MediScan_Frontend.pdf
