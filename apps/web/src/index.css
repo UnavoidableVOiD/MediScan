@@ -1,0 +1,166 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------
+   MediScan design tokens — "Clinical Glass"
+   White paper, emerald light, frosted surfaces. Green + white only.
+   ------------------------------------------------------------------ */
+@theme {
+    --font-display: "Sora", ui-sans-serif, system-ui, sans-serif;
+    --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+
+    --color-brand-50: #ecfdf5;
+    --color-brand-100: #d1fae5;
+    --color-brand-200: #a7f3d0;
+    --color-brand-300: #6ee7b7;
+    --color-brand-400: #34d399;
+    --color-brand-500: #10b981;
+    --color-brand-600: #059669;
+    --color-brand-700: #047857;
+    --color-brand-800: #065f46;
+    --color-brand-900: #064e3b;
+    --color-brand-950: #022c22;
+
+    --color-mint: #baf5dc;
+    --color-teal: #14b8a6;
+
+    --color-ink: #0b1f1a;
+    --color-ink-soft: #3f5a52;
+    --color-ink-muted: #7b918a;
+    --color-paper: #f7fbf9;
+    --color-line: rgb(6 78 59 / 0.1);
+
+    --color-critical: #dc2626;
+    --color-warn: #d97706;
+
+    --shadow-glass: 0 1px 0 0 rgb(255 255 255 / 0.6) inset, 0 20px 50px -20px rgb(6 78 59 / 0.25);
+    --shadow-glow: 0 0 0 1px rgb(16 185 129 / 0.25), 0 10px 40px -10px rgb(16 185 129 / 0.45);
+
+    --radius-xl2: 1.25rem;
+    --radius-xl3: 1.75rem;
+
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@layer base {
+    html {
+        scroll-behavior: auto; /* Lenis drives scrolling */
+    }
+    body {
+        @apply bg-paper text-ink font-sans antialiased;
+        background-image: radial-gradient(
+                1200px 600px at 10% -10%,
+                rgb(52 211 153 / 0.18),
+                transparent 60%
+            ),
+            radial-gradient(900px 500px at 100% 0%, rgb(20 184 166 / 0.12), transparent 60%),
+            radial-gradient(800px 600px at 50% 110%, rgb(167 243 208 / 0.22), transparent 60%);
+        background-attachment: fixed;
+    }
+    h1,
+    h2,
+    h3,
+    h4 {
+        @apply font-display tracking-tight text-ink;
+    }
+    ::selection {
+        background: rgb(52 211 153 / 0.35);
+    }
+    html.lenis,
+    html.lenis body {
+        height: auto;
+    }
+    .lenis.lenis-smooth {
+        scroll-behavior: auto !important;
+    }
+    .lenis.lenis-smooth [data-lenis-prevent] {
+        overscroll-behavior: contain;
+    }
+    .lenis.lenis-stopped {
+        overflow: hidden;
+    }
+}
+
+@layer components {
+    /* frosted surfaces */
+    .glass {
+        @apply rounded-xl3 border border-white/70 bg-white/55 backdrop-blur-xl;
+        box-shadow: var(--shadow-glass);
+    }
+    .glass-strong {
+        @apply rounded-xl3 border border-white/80 bg-white/75 backdrop-blur-2xl;
+        box-shadow: var(--shadow-glass);
+    }
+    .glass-dark {
+        @apply rounded-xl3 border border-white/10 bg-brand-950/70 text-white backdrop-blur-xl;
+    }
+    .glass-pill {
+        @apply rounded-full border border-white/70 bg-white/60 backdrop-blur-lg;
+    }
+    /* subtle dotted grid used behind sections */
+    .grid-dots {
+        background-image: radial-gradient(rgb(6 78 59 / 0.12) 1px, transparent 1px);
+        background-size: 22px 22px;
+        mask-image: radial-gradient(ellipse at center, black 40%, transparent 75%);
+    }
+    .text-gradient {
+        background: linear-gradient(120deg, #047857 0%, #10b981 45%, #14b8a6 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+    .ring-focus {
+        @apply outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-paper;
+    }
+    .scrollbar-thin::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+        background: rgb(6 78 59 / 0.18);
+        border-radius: 999px;
+    }
+}
+
+@keyframes float-y {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+@keyframes pulse-ring {
+    0% {
+        transform: scale(0.9);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1.8);
+        opacity: 0;
+    }
+}
+@keyframes shimmer {
+    from {
+        background-position: 200% 0;
+    }
+    to {
+        background-position: -200% 0;
+    }
+}
+.animate-float {
+    animation: float-y 6s ease-in-out infinite;
+}
+.animate-pulse-ring {
+    animation: pulse-ring 1.8s ease-out infinite;
+}
+.skeleton {
+    background: linear-gradient(
+        90deg,
+        rgb(6 78 59 / 0.06) 25%,
+        rgb(6 78 59 / 0.12) 50%,
+        rgb(6 78 59 / 0.06) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s linear infinite;
+}

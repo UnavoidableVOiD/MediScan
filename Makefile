@@ -34,4 +34,10 @@ contracts: ## regenerate OpenAPI specs and the web client
 doc: ## rebuild docs/MediScan_Engineering_Baseline.pdf
 	uv run --with reportlab python docs/src/build_baseline_pdf.py
 
-.PHONY: help setup infra-up infra-down lint typecheck test test-all contracts doc
+doc-frontend: ## rebuild docs/MediScan_Frontend.pdf from apps/web/src/app/routes.ts
+	uv run --with reportlab python docs/src/build_frontend_pdf.py
+
+web-dev: ## run the frontend dev server
+	cd apps/web && npm run dev
+
+.PHONY: help setup infra-up infra-down lint typecheck test test-all contracts doc doc-frontend web-dev
